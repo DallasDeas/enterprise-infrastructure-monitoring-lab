@@ -2,166 +2,166 @@
 
 [Walkthrough](../README.md) · [Full archive](../archive.md)
 
-I built the Linux VM with two jobs in mind: reach the internet for packages and reach the Windows server on the lab network. I checked those paths separately. Along the way I corrected installation-media and command-syntax mistakes, installed updates, and verified SSH access.
+I built an Ubuntu virtual machine to run the monitoring system. Ubuntu is a Linux operating system. I gave it one network connection for downloading software from the internet and another for reaching the Windows machines in my lab. I tested both connections separately.
 
 ## 027 — Preparing the Ubuntu VM
 
-I inspected a Generation 2 VM with two virtual processors and 4 GB of startup memory for the Linux monitoring server.
+I prepared the Ubuntu virtual machine with two virtual processors and 4 GB of starting memory. Ubuntu is the Linux operating system I used for the final monitoring server.
 
 ![Screenshot 027: Preparing the Ubuntu VM](../screenshots/archive/screenshot_027.png)
 
 ## 028 — Catching setup mistakes
 
-The VM had a 60 GB dynamic disk and a Default Switch connection, but the output also showed Windows installation media and a malformed combined command. I checked the actual VM settings before proceeding.
+I checked the new machine's disk, network, and installation media. I found Windows installation media in the settings and an incorrectly combined command in my checks. I needed to confirm the setup before continuing with Ubuntu.
 
 ![Screenshot 028: Catching setup mistakes](../screenshots/archive/screenshot_028.png)
 
 ## 029 — Checking mounted installation media
 
-The DVD inventory showed both Windows and Ubuntu 26.04.1 ISO paths. This helped me verify the Ubuntu installation media was present.
+I listed the installation files attached to the virtual machines and could see both Windows and Ubuntu files. These ISO files act like installation DVDs. This check helped me confirm that the Ubuntu installer was available.
 
 ![Screenshot 029: Checking mounted installation media](../screenshots/archive/screenshot_029.png)
 
-## 030 — Checking Secure Boot
+## 030 — Checking how Ubuntu is allowed to start
 
-I confirmed Secure Boot was on with the Microsoft UEFI Certificate Authority template for the Linux guest.
+I checked Secure Boot, which controls which startup software a machine is allowed to load. The Ubuntu machine had it enabled with the Microsoft UEFI Certificate Authority setting shown in the screenshot.
 
-![Screenshot 030: Checking Secure Boot](../screenshots/archive/screenshot_030.png)
+![Screenshot 030: Checking how Ubuntu is allowed to start](../screenshots/archive/screenshot_030.png)
 
 ## 031 — Starting Ubuntu networking
 
-The Ubuntu installer detected eth0 and obtained an IPv4 address through DHCP. I used this connection during the initial installation.
+The Ubuntu installer found its first network connection and received an address automatically through DHCP. DHCP supplies network settings without me typing in a fixed address. I used this connection during installation.
 
 ![Screenshot 031: Starting Ubuntu networking](../screenshots/archive/screenshot_031.png)
 
 ## 032 — Leaving the installer proxy blank
 
-The proxy field was empty in this setup screen. I did not document a separate proxy service for the lab.
+I left the installer's proxy field empty. A proxy is an optional intermediary for network requests, and I did not document a separate proxy for this lab.
 
 ![Screenshot 032: Leaving the installer proxy blank](../screenshots/archive/screenshot_032.png)
 
 ## 033 — Choosing Ubuntu storage
 
-I used the 60 GB virtual disk with LVM selected. The installer screen shows disk encryption was not selected.
+I selected the 60 GB virtual disk and LVM, a Linux tool for organizing disk space. The screen also shows that disk encryption was not selected at this stage.
 
 ![Screenshot 033: Choosing Ubuntu storage](../screenshots/archive/screenshot_033.png)
 
-## 034 — Reviewing the partition layout
+## 034 — Checking how disk space is divided
 
-I reviewed the EFI, /boot, root filesystem, and remaining LVM space before continuing. The root logical volume was about 28.5 GB, rather than the full disk capacity.
+I reviewed how Ubuntu would divide the disk between startup files, the main system, and unused space. The main system area was about 28.5 GB; it did not use the entire 60 GB disk.
 
-![Screenshot 034: Reviewing the partition layout](../screenshots/archive/screenshot_034.png)
+![Screenshot 034: Checking how disk space is divided](../screenshots/archive/screenshot_034.png)
 
 ## 035 — Reaching profile setup
 
-I captured the Ubuntu profile screen before entering account details. No account credentials are included in this repository.
+I reached the screen for creating the Ubuntu account. I took this screenshot before entering the account information, so it does not expose a username or password.
 
 ![Screenshot 035: Reaching profile setup](../screenshots/archive/screenshot_035.png)
 
 ## 036 — Skipping Ubuntu Pro enrollment
 
-I selected the option to continue without Ubuntu Pro enrollment for this lab build.
+I chose to continue without signing up for Ubuntu Pro, Ubuntu's optional subscription service. I then continued with the lab installation.
 
 ![Screenshot 036: Skipping Ubuntu Pro enrollment](../screenshots/archive/screenshot_036.png)
 
 ## 037 — Reviewing SSH installation options
 
-The SSH selection screen is an intermediate capture with the install checkbox clear. I use the later install log and service check to establish that OpenSSH was actually installed.
+I reviewed the option to install SSH, which lets me control Linux remotely through a command window. The box was not selected in this particular capture. I used later installation and connection checks to confirm SSH was actually installed.
 
 ![Screenshot 037: Reviewing SSH installation options](../screenshots/archive/screenshot_037.png)
 
 ## 038 — Watching installation finish
 
-The installer log shows OpenSSH server installation and the remaining configuration steps. This is stronger evidence of installation than the earlier option screen.
+I watched the installation log, which is the installer's running record of its work. It showed the OpenSSH server being installed. This confirmed more than the earlier options screen did.
 
 ![Screenshot 038: Watching installation finish](../screenshots/archive/screenshot_038.png)
 
 ## 039 — Removing installation media
 
-At the end of setup, Ubuntu prompted me to remove the installation medium and press Enter.
+Ubuntu asked me to remove the installation media and continue. This was the end-of-installation step before starting the system from its installed virtual disk.
 
 ![Screenshot 039: Removing installation media](../screenshots/archive/screenshot_039.png)
 
 ## 040 — Checking VM hardware after installation
 
-I inspected the VM's memory, processors, disk, network adapter, and empty DVD drives. The settings also showed a checkpoint existed; I did not treat that as a tested backup.
+I checked the new machine's memory, processors, disk, and network after installation. I also confirmed the installation DVDs were no longer attached. A saved checkpoint was visible, but I had not tested it as a backup.
 
 ![Screenshot 040: Checking VM hardware after installation](../screenshots/archive/screenshot_040.png)
 
 ## 041 — Logging into Ubuntu
 
-I reached Ubuntu 26.04.1 LTS on the installed guest. Account details, network identifiers, and SSH key information have been removed from the screenshot.
+I logged into the installed Ubuntu system and confirmed it reported version 26.04.1 LTS. I covered account information, network details, and identifying key information before sharing the screenshot.
 
 ![Screenshot 041: Logging into Ubuntu](../screenshots/archive/screenshot_041.png)
 
-## 042 — Checking the SSH listener
+## 042 — Checking remote access
 
-I confirmed ssh.service was active and listening on port 22. The service was socket-triggered in this capture, so the disabled service label did not mean SSH was unavailable.
+I checked that SSH was running and accepting connections on port 22. A port is a numbered entry point for a network service. The screen also showed that SSH could be started through its connection listener, which explains the otherwise confusing disabled label.
 
-![Screenshot 042: Checking the SSH listener](../screenshots/archive/screenshot_042.png)
+![Screenshot 042: Checking remote access](../screenshots/archive/screenshot_042.png)
 
 ## 043 — Refreshing package information
 
-I ran apt update and checked the available updates. This capture showed 40 packages could be upgraded.
+I refreshed Ubuntu's list of available software updates with apt update. This step checks what updates exist; it does not install them by itself. The result showed 40 packages available to upgrade.
 
 ![Screenshot 043: Refreshing package information](../screenshots/archive/screenshot_043.png)
 
 ## 044 — Completing package updates
 
-I reviewed the package-update output and service restart notices. The output also identified sessions still using older binaries.
+I reviewed the software-update results and notices about programs that might need restarting. Some sessions were still using older program files, so finishing an update did not automatically mean every running session had switched to the new version.
 
 ![Screenshot 044: Completing package updates](../screenshots/archive/screenshot_044.png)
 
 ## 045 — Correcting SSH syntax
 
-My first SSH attempt used the wrong command syntax and PowerShell rejected it. I corrected the command before retrying the connection.
+My first remote-login command was written incorrectly, and PowerShell rejected it. I corrected the SSH command before trying again.
 
 ![Screenshot 045: Correcting SSH syntax](../screenshots/archive/screenshot_045.png)
 
 ## 046 — Connecting over SSH
 
-The corrected SSH connection reached the Ubuntu login banner. This confirmed remote shell access from Windows to the Linux VM.
+The corrected SSH command connected me to Ubuntu from Windows. I could now manage the Linux machine from a Windows command window instead of opening its virtual-machine screen each time.
 
 ![Screenshot 046: Connecting over SSH](../screenshots/archive/screenshot_046.png)
 
 ## 047 — Adding the lab network connection
 
-I inspected the Ubuntu VM's two virtual adapters: one on the Default Switch and one on the internal lab switch.
+I checked Ubuntu's two network connections. One connected to Hyper-V's Default Switch for internet access. The other connected to the internal switch so Ubuntu could communicate with the Windows lab machines.
 
 ![Screenshot 047: Adding the lab network connection](../screenshots/archive/screenshot_047.png)
 
 ## 048 — Checking both Linux interfaces
 
-I checked addresses and routes after adding the second adapter. The internet-facing interface had DHCP addressing; the lab interface did not yet have its static IPv4 address.
+I checked the addresses on both Ubuntu connections. The internet connection already had an automatically assigned address, but the lab connection still needed its fixed address.
 
 ![Screenshot 048: Checking both Linux interfaces](../screenshots/archive/screenshot_048.png)
 
-## 049 — Reading the existing Netplan configuration
+## 049 — Reading the current network settings
 
-I inspected the installer-generated Netplan file and current routes before adding a separate configuration for the lab interface.
+I read Ubuntu's existing Netplan file before editing the network settings. Netplan is the configuration system Ubuntu uses here to describe its network connections. Checking the existing file helped me avoid changing the working internet connection by mistake.
 
-![Screenshot 049: Reading the existing Netplan configuration](../screenshots/archive/screenshot_049.png)
+![Screenshot 049: Reading the current network settings](../screenshots/archive/screenshot_049.png)
 
-## 050 — Writing the static lab configuration
+## 050 — Giving Ubuntu a fixed lab address
 
-I created a Netplan file for eth1, disabled DHCP on that interface, set its static /24 address, restricted file permissions, and ran netplan generate. The address itself is redacted.
+I created a separate network-settings file for Ubuntu's lab connection and gave it a fixed address. I restricted access to the file and checked that Netplan could process it. The actual address is covered in the screenshot.
 
-![Screenshot 050: Writing the static lab configuration](../screenshots/archive/screenshot_050.png)
+![Screenshot 050: Giving Ubuntu a fixed lab address](../screenshots/archive/screenshot_050.png)
 
 ## 051 — Verifying the Linux routes
 
-After a small ip-command typo, I checked the corrected address and route output. The lab interface had its static address and the default route remained on the internet-facing interface.
+After correcting a small command typo, I checked the resulting network settings. The lab connection had its fixed address, and internet traffic still used the other connection. This was the arrangement I wanted.
 
 ![Screenshot 051: Verifying the Linux routes](../screenshots/archive/screenshot_051.png)
 
 ## 052 — Checking the address again after login
 
-In a later session, the DHCP address had changed while the lab address remained in place. This was useful confirmation that the two interfaces had different jobs.
+I checked again in a later session. The automatically assigned internet address had changed, but the fixed lab address remained the same. This helped confirm that the two connections were doing their separate jobs.
 
 ![Screenshot 052: Checking the address again after login](../screenshots/archive/screenshot_052.png)
 
-## 053 — Checking outbound HTTPS
+## 053 — Testing a website connection
 
-I requested response headers from ubuntu.com and received HTTP/2 200. The published image is cropped to the terminal evidence and removes incidental session information.
+I asked ubuntu.com for a web response and received a successful status, HTTP 200. This gave me a direct check that Ubuntu could reach that website. I cropped the shared image to the relevant terminal output.
 
-![Screenshot 053: Checking outbound HTTPS](../screenshots/archive/screenshot_053.png)
+![Screenshot 053: Testing a website connection](../screenshots/archive/screenshot_053.png)

@@ -1,59 +1,63 @@
-# From a connected lab to a useful alert
+# My lab, from the first connection checks to email alerts
 
-[Project overview](../README.md) · [All 142 annotated screenshots](archive.md)
+[Project overview](../README.md) · [All 142 screenshots](archive.md)
 
-These are the parts of the project I would walk through in an interview. The complete archive includes the installation screens and repeated checks; this page follows the decisions and results that mattered most.
+I built this lab to practice looking after computers after they have been installed. I wanted to check their health, notice problems, and use their records to explain what happened. This page follows the main steps without requiring experience with the tools.
 
-## First, I had to make the network checks agree
+## 1. I got the computers talking to each other
 
-The workstation could ping the directory server, but the Hyper-V host could not. I found an APIPA address on the host's lab adapter, assigned it an address in the lab subnet, and checked again. The successful replies below came from the host after that change.
+My virtual workstation could reach the Windows server, but my physical computer could not. I found that the physical computer's lab connection had given itself an address outside the lab's network range. I assigned a matching fixed address and tested again.
 
-![Four successful host-to-server replies](screenshots/archive/screenshot_012.png)
+![Four replies after correcting the network address](screenshots/archive/screenshot_012.png)
 
-That gave me a working foundation for the Ubuntu monitoring VM. I used one interface for internet access and a second static interface for the lab. [Network chapter](chapters/01-network-foundation.md) · [Ubuntu chapter](chapters/03-ubuntu-build.md).
+The four replies show that the server answered the test requests. This did not test every possible network function, but it confirmed the basic connection after my change. [Network checks](chapters/01-network-foundation.md).
 
-## The database worked before the web page did
+## 2. I gave Zabbix somewhere to store its information
 
-I created the Zabbix database, tested the application account, and imported the schema. The count of 207 tables gave me a useful checkpoint before I dealt with the frontend.
+Zabbix is the monitoring program. It uses a database to store settings and collected information. I created that database, checked that the application could sign in, and loaded the structure it needed. The result showed 207 tables, the containers that organize the stored information.
 
-![Imported schema with 207 tables](screenshots/archive/screenshot_061.png)
+![Database check showing 207 tables](screenshots/archive/screenshot_061.png)
 
-Apache being active did not finish the job. I first got a 404, then a configuration error, then PHP source in the browser. I checked the alias, proxy modules, and PHP-FPM handler until the page reached the installer and then the dashboard. [Full web-stack troubleshooting](chapters/04-zabbix-stack.md).
+The database was ready, but the website still failed. First I got a missing-page error. Later the browser showed program code instead of the page. I worked through the web server settings and the PHP processing setup until the dashboard opened.
 
-![Working Zabbix dashboard](screenshots/archive/screenshot_082.png)
+![The working Zabbix dashboard](screenshots/archive/screenshot_082.png)
 
-## I checked collected values, not just the host list
+This taught me to check each part separately. A running database or web server does not automatically mean the whole application works. [Zabbix installation and website repairs](chapters/04-zabbix-stack.md).
 
-On Windows, I verified Agent 2 was Running / Automatic and listening on port 10050. In Zabbix, I added the Windows template and agent interface, then checked Latest data. The DNS service values below show actual collected service states.
+## 3. I checked that Windows was sending useful information
 
-![DNS Server and DNS Client values](screenshots/archive/screenshot_097.png)
+I installed Agent 2, a small background program on Windows that responds to Zabbix's requests. I checked that it was running, added the Windows server to Zabbix, and looked at the information being collected.
 
-I also reviewed the service-state and availability triggers and captured a deliberate agent-stop test. Those checks helped me distinguish a service value from loss of the monitoring connection. [Windows monitoring chapter](chapters/05-windows-monitoring.md).
+![Collected readings showing the DNS services running](screenshots/archive/screenshot_097.png)
 
-## A time warning turned into its own troubleshooting exercise
+Here I checked DNS, the service that helps computers find each other by name. The readings showed both DNS services running. I also looked at processor use, memory, and storage. These readings showed more than simply seeing the server listed on a dashboard. [Windows monitoring](chapters/05-windows-monitoring.md).
 
-Ubuntu's clock was about 221.5 seconds slow. I checked Chrony's sources, stepped the clock, and verified synchronization later. Then I found Chrony was denying the Windows client, corrected its access rule, and checked the time source Windows actually selected. A successful peer-configuration command had not been enough.
+## 4. I worked through a clock disagreement
 
-![Windows synchronized to the Linux NTP source](screenshots/archive/screenshot_121.png)
+Ubuntu's clock was about three minutes and 42 seconds slow. That matters when comparing records: if two clocks disagree, an event can appear to happen before or after something it did not actually precede or follow.
 
-The final status showed Leap Indicator 0 and Stratum 4. The address is covered, and the exact intervening Windows provider change was not captured. [Time-sync chapter](chapters/06-time-synchronization.md).
+I used Chrony, Ubuntu's timekeeping program, to check and correct the clock. I then corrected a rule that was preventing Windows from requesting time from Ubuntu. Windows initially kept using its previous time source, so I checked its status again rather than assuming the setting had taken effect.
 
-## The alert needed a recovery message too
+![Windows reporting synchronization with the Linux time server](screenshots/archive/screenshot_121.png)
 
-I tested Gmail media delivery, limited the action to the directory server's agent-unavailable trigger, and added recovery notification. The October 30 Action log showed both messages marked Sent.
+The final result showed Windows synchronized and using the Linux server. I did not capture every change between the first checks and this result, so the notes do not claim one unrecorded command was the fix. [Time troubleshooting](chapters/06-time-synchronization.md).
 
-![Problem and recovery Gmail sends](screenshots/archive/screenshot_139.png)
+## 5. I added both a problem email and a recovery email
 
-The problem lasted five minutes in Zabbix. I did not measure detection latency or mailbox delivery time. [Alert setup and results](../docs/alerting.md).
+I tested Gmail from Zabbix, then created a rule for when Zabbix could not contact the Windows agent. I added a second message for when the problem cleared. I wanted to know both when attention was needed and when monitoring had recovered.
 
-## I checked the Windows evidence before writing the incident story
+![Problem and recovery emails marked Sent](screenshots/archive/screenshot_139.png)
 
-I compared the last boot time, the agent's Running event, and the Zabbix problem/recovery times. The sequence supports a startup-associated monitoring interruption under the documented time-zone assumption. It does not prove an agent crash or a particular manual fix.
+The October 30 records show both messages marked Sent. The problem was open for five minutes. That does not tell me how long Zabbix took to notice the original failure or how quickly the messages arrived in my inbox. [Email setup and results](../docs/alerting.md).
 
-![Agent Running event in the queried window](screenshots/archive/screenshot_142.png)
+## 6. I read the records before deciding what happened
 
-The unexpected-shutdown message was the detail I had to read carefully: it was logged on October 30 but described October 28. I kept that finding in its own note. [October 30 investigation](../docs/incidents/2026-10-30-monitoring-interruption.md) · [October 28 finding](../docs/incidents/2026-10-28-unclean-shutdown.md).
+I compared Windows' startup time, the record of the agent starting, and Zabbix's problem and recovery times. After accounting for the displayed time zones, the interruption appeared close to a Windows startup. That is a useful clue, but it does not prove the original cause.
 
-## Browse the full record
+![Windows record showing the agent entering the Running state](screenshots/archive/screenshot_142.png)
 
-The [full archive](archive.md) links every PNG with a first-person explanation. The seven chapters include the early Windows VM branch, Ubuntu installation, web-stack failures, monitoring checks, time-sync work, and alert investigation. Private fields are covered; the remaining screenshot content is original evidence.
+I also found a message recorded on October 30 that described an unexpected shutdown on October 28. I kept that earlier shutdown separate. I did not have evidence to say the agent crashed, that a particular start command restored it, or that the Windows server's other services were unavailable for five minutes.
+
+[October 30 investigation](../docs/incidents/2026-10-30-monitoring-interruption.md) · [October 28 finding](../docs/incidents/2026-10-28-unclean-shutdown.md)
+
+The [full archive](archive.md) includes every screenshot, including installation screens, mistakes, and repeated checks. Each one has a first-person explanation of what I was doing and what the result meant.

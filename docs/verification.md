@@ -1,34 +1,38 @@
-# Evidence and verification notes
+# What my screenshots show—and what they do not
 
-This edition documents all 142 PNGs supplied in the project archive. Every original was inspected, and every image has a numbered explanation in the [archive](../evidence/archive.md). The source ZIP, original PNGs, OCR output, local account paths, and private review materials are not repository content.
+I included all 142 screenshots from the supplied project archive. Each image has an explanation in the [full archive](../evidence/archive.md). I kept unsuccessful attempts and repeated checks because they help explain how I reached the working setup.
 
-## What is directly supported
+## What I could check directly
 
-- Hyper-V switch membership, VM state and hardware checks, host/guest connectivity tests, and Ubuntu dual-interface configuration.
-- Ubuntu 26.04.1 LTS, Zabbix 7.4.16, MariaDB 11.8.6, and PHP 8.5.4 as displayed during the build. These are captured versions, not recommendations about today's latest release.
-- A populated Zabbix database, active services, completed frontend installation, Windows Agent 2 installation, a listening agent socket, and collected Windows items.
-- Chrony offset, source and access checks; later synchronized Linux status and Windows selection of the Linux NTP source.
-- Gmail media-test success, enabled trigger action, and problem/recovery sends marked Sent.
-- Windows boot and service events used in the two incident notes.
+- I checked virtual-machine settings and tested connections between the computers.
+- I checked installed software versions, the database structure, and the running monitoring programs.
+- I reached the Zabbix dashboard and collected Windows health readings.
+- I checked the Linux and Windows clocks and their selected time sources.
+- I tested Gmail and found both problem and recovery messages marked Sent.
+- I read Windows startup, shutdown, and agent service records during the investigation.
 
-## Where I kept the claims limited
+The screenshots show Ubuntu 26.04.1 LTS, Zabbix 7.4.16, MariaDB 11.8.6, and PHP 8.5.4. These are the versions captured during my build, not a claim about which versions someone should install today.
 
-| Topic | Limit |
+## Where the record has limits
+
+| Topic | What I can honestly say |
 |---|---|
-| Initial AD build | The server and workstation predate this sequence. Domain-promotion and domain-join steps are not captured. |
-| Early Windows monitoring VM | OS/network setup is shown. A completed PRTG deployment is not. |
-| Screenshot ordering | File numbers follow the supplied export. They do not prove exact chronology between every capture. |
-| October 30 root cause | Startup association is supported conditionally on the time basis; a specific initiating fault is not proven. |
-| Manual recovery | The elevated screenshot shows Running before Start-Service. It cannot establish that command as the fix. |
-| Agent crash | No crash event appears in the bounded query. This is not proof no crash ever occurred. |
-| Five-minute event | Problem duration, not fault-to-detection latency, mailbox delay, or measured AD/DNS downtime. |
-| Notification receipt | Owner-confirmed in the conversation; screenshot evidence records Sent, without mailbox-arrival timestamps. |
-| October 30 time conversion | Earlier screenshots support the display settings, but no same-incident offset measurement was captured. |
-| Final Windows time change | Final synchronized status is shown; the exact intervening provider change is not. |
-| Reproducibility | This is a build record, not a complete configuration export or tested automated rebuild. |
+| Original Windows domain setup | The server and workstation already existed. I did not capture the original steps for creating the domain or joining the workstation. |
+| Early Windows monitoring machine | I captured its operating-system and network setup, but not a finished PRTG monitoring installation. |
+| Screenshot order | The numbers follow the exported files. They are not precise proof of when every action happened. |
+| Cause of the October 30 problem | The timing suggests a connection with startup, but I did not prove the original cause. |
+| A manual repair | The agent was already running before the displayed administrator start command. I cannot claim that command restored it. |
+| An agent crash | My limited log search returned no crash event. That is not proof that a crash never happened. |
+| The five-minute value | It is the recorded problem duration, not a measurement of detection speed, email delay, or downtime for every server function. |
+| Email receipt | I confirmed receiving the messages during the lab. The screenshots show Sent, not separate inbox arrival times. |
+| Comparing incident times | I used time-zone settings shown earlier. I did not record a new comparison of both clocks during the incident. |
+| Final Windows time correction | The final status showed synchronization, but not every change leading to it was captured. |
+| Rebuilding the lab | These are build notes, not a complete settings export or a tested automatic installer. |
 
-## Image handling
+## How I prepared the images
 
-The published PNGs use opaque solid-color redaction and, for one wide terminal capture, cropping. Pixels outside those edits are preserved from the originals. PNG metadata was removed. A [SHA-256 manifest](../evidence/sanitized-sha256.csv) identifies the sanitized files included in this edition; it does not expose original-file metadata.
+I covered private information with solid rectangles and cropped one wide terminal image. The remaining pixels were preserved from the originals. I removed embedded PNG metadata, the extra information an image file can carry beyond its visible picture.
 
-The short walkthrough selects the strongest evidence. The seven chapter pages retain all 142 screenshots, including intermediate screens, mistakes, and repeated checks. The four earlier curated images remain as supporting legacy crops.
+The [file-check manifest](../evidence/sanitized-sha256.csv) lists a SHA-256 value for each sanitized evidence image. This is a file fingerprint that can be used to check whether an image file has changed. It does not reveal the hidden original content.
+
+The seven chapters contain all 142 screenshots. The shorter walkthrough selects the main results, and four earlier cropped evidence images remain in the repository. Original images, private account details, and working review files are not included.

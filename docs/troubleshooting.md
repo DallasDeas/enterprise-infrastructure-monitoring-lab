@@ -1,34 +1,34 @@
-# Troubleshooting notes from the build
+# What went wrong and how I checked it
 
-[Project overview](../README.md) · [Full evidence archive](../evidence/archive.md)
+[Project overview](../README.md) · [Full screenshot archive](../evidence/archive.md)
 
-I kept the failed checks because they explain how I narrowed the problems down. A successful command was useful only when the next check showed the behavior I needed.
+I kept the failed attempts because they show how I worked through the problems. My approach was to check one part, make a change where the result pointed, and then test again. A command finishing without an error was not enough by itself.
 
-| Symptom | What I checked or changed | What the next evidence showed |
+| What I noticed | What I did next | What I learned |
 |---|---|---|
-| Get-VM permission error | Used an elevated shell | VM inventory became available (001–002) |
-| Workstation reached the server; host could not | Checked the host's lab adapter and corrected its APIPA addressing | Four host-to-server replies (007–012) |
-| Guest adapter Up, but host path failing | Compared ping, neighbor state, routes, and DNS from different sources | Some paths worked while the monitoring-VM host path still failed; no single cause proven (021–026) |
-| Wrong media and malformed command during VM preparation | Inspected DVD drives and firmware separately | Ubuntu ISO present and Secure Boot template confirmed (028–030) |
-| SSH command rejected by PowerShell | Corrected the command syntax | Ubuntu remote login succeeded (045–046) |
-| Second Ubuntu NIC had no lab IPv4 address | Added static Netplan configuration and checked addresses/routes | Static lab address alongside the internet default route (048–052) |
-| Zabbix service active but disabled | Checked enabled state separately | Later output showed enabled (062–064) |
-| /zabbix returned 404 | Inspected the Apache configuration link and alias | Reached later web-configuration checks (065–066) |
-| Apache rejected ProxyTimeout | Investigated proxy configuration and reran configtest | Syntax OK (067–070) |
-| Browser displayed PHP source | Checked PHP-FPM, proxy_fcgi, enabled FPM configuration, and socket handler | Local request returned HTML and browser reached setup (069–074) |
-| Agent installed but collection needed verification | Checked service, listener, host interface, template, and Latest data | Running / Automatic, TCP 10050, green availability, collected values (091–097) |
-| Clock-skew warning | Compared actual time status and Chrony tracking | Linux clock was about 221.5 seconds slow (105–110) |
-| NTP active but Linux clock unsynchronized | Checked sources, ran makestep, and rechecked later | timedatectl eventually showed synchronized (111–113) |
-| Windows NTP client denied | Used chronyc accheck; inspected UFW and Chrony access configuration | Access allowed after configuration change (114–116) |
-| Windows peer command succeeded but source stayed VMIC | Queried configuration and actual source repeatedly | Final status selected Linux NTP; exact intervening change not captured (118–121) |
-| Start-Service could not open service | Checked elevation and queried current state | Elevated capture already showed Running before the displayed start command (135–136) |
+| I could not list my virtual machines | I reopened PowerShell with administrator permissions | I could then see the machines (001–002). |
+| The workstation could reach the server, but my physical computer could not | I checked and corrected the physical computer's lab address | The server answered all four test requests afterward (007–012). |
+| A virtual network connection was on, but requests still failed | I tested from different computers and compared addresses, routes, and name lookups | Some paths worked while another failed; I did not prove one specific cause for all failures (021–026). |
+| The Ubuntu preparation checks showed the wrong installation media and a command error | I checked the installation files and startup settings separately | I could confirm the Ubuntu installer and appropriate startup setting were present (028–030). |
+| My remote-login command failed | I corrected how I wrote the SSH command | I could log into Ubuntu from Windows (045–046). |
+| Ubuntu's second connection had no fixed lab address | I added its network settings and checked the results | It had a fixed lab address while internet traffic still used the other connection (048–052). |
+| Zabbix was running but not set to start automatically | I checked its startup setting separately | A later check showed automatic startup enabled (062–064). |
+| The browser could not find the Zabbix page | I checked how Apache connected the web address to the files on disk | This led to the next website configuration checks (065–066). |
+| Apache rejected one of its settings | I investigated the web-server configuration and ran its check again | The settings check passed (067–070). |
+| The browser showed program code instead of a webpage | I checked PHP-FPM and how Apache sent page requests to it | I eventually received webpage content and reached the setup screen (069–074). |
+| The Windows agent was installed, but I still needed proof of monitoring | I checked the background program, its connection, and the collected readings | Zabbix could reach Windows and display its data (091–097). |
+| Zabbix warned that the clocks disagreed | I checked each computer's time and time source | Ubuntu was about three minutes and 42 seconds slow (105–110). |
+| Ubuntu's time service was on, but its clock was not synchronized | I checked the reference source, corrected the clock, and checked again | Ubuntu later reported synchronization (111–113). |
+| Windows was not allowed to request time from Ubuntu | I checked Chrony's access rules and changed the relevant permission | The access test then allowed Windows (114–116). |
+| Windows accepted a new time setting but still used its old source | I checked the source it actually selected | The final record showed Linux as the source, although not every intervening change was captured (118–121). |
+| A command to start the Windows agent failed | I checked permissions and the current service state in an administrator window | The next capture already showed it running before the start command, so that command was not a proven repair (135–136). |
 
-## The checks I would repeat during another interruption
+## What I would check during another interruption
 
-1. Record the time with its offset, then check whether the VM is running and whether the monitoring server is reachable.
-2. On Windows, check Agent 2 state and its listening port. A local Running result does not prove the remote monitoring path is healthy.
-3. In Zabbix, inspect interface availability, the problem's trigger, and the most recent item timestamps.
-4. Compare Windows boot and service events with the problem and recovery times using an explicit time basis.
-5. Check the action log separately from the problem state. Then verify mailbox receipt separately from Sent.
+1. I would record the time and time zone, then check that both virtual machines are running.
+2. I would check the Windows agent locally. If it is running, I would still test whether the monitoring server can reach it.
+3. I would look at the warning rule in Zabbix and when it last collected fresh information.
+4. I would compare Windows' startup and service records with the alert times, using the same time zone.
+5. I would check the email send record, then the inbox. A message marked Sent and a message received are separate checks.
 
-For the October 30 case, I did not find enough evidence to name a proven root cause or a proven manual recovery command. That limit belongs in the incident report rather than being replaced with a cleaner story.
+For October 30, I could document the interruption and recovery, but I did not have enough evidence to prove the original cause or a particular command that fixed it. [Full investigation](incidents/2026-10-30-monitoring-interruption.md).

@@ -1,55 +1,60 @@
-# Enterprise Infrastructure Monitoring Lab
+# Infrastructure Monitoring Lab
 
-**Hyper-V · Windows Server · Ubuntu · Zabbix · PowerShell · Linux administration**
+**Hyper-V · Windows Server · Ubuntu · Zabbix**
 
-I built this lab to practice the work that comes after a server is installed: checking that it can communicate, collecting useful health data, getting an alert when monitoring breaks, and figuring out what the logs actually say about recovery.
+I built a small network of virtual computers and set up a system to watch their health. My goal was to know when monitoring lost contact with a Windows server, receive an email about it, and check the records to understand what happened.
 
-The final setup uses an Ubuntu VM running Zabbix to monitor a Windows Server directory-services and DNS VM. I connected Gmail problem and recovery notifications, worked through a cross-platform time-sync issue, and investigated an October 30 monitoring interruption using Windows events and the Zabbix action log.
+A virtual machine is a separate computer running inside a physical computer. This let me practice with Windows and Linux servers on one machine. This is a home lab, not a production system or a claim of workplace incident-response experience.
 
-This is a home lab built around enterprise administration tools. It is not a production deployment or a claim of production incident-response experience.
+## What I built
 
-## The result
+I used **Hyper-V** to run the virtual computers. My **Windows Server** provided directory services, which manage the lab's domain, and **DNS**, which helps computers find each other by name.
 
-![Zabbix problem and recovery notifications marked Sent](evidence/screenshots/archive/screenshot_139.png)
+On **Ubuntu**, a Linux operating system, I installed **Zabbix**. Zabbix collects information about computers and shows it in a dashboard. A small program on Windows called **Agent 2** supplies the Windows health information. I also connected Zabbix to **Gmail** so I could receive problem and recovery messages without watching the dashboard constantly.
 
-*The Action log shows both Gmail notifications marked Sent. The problem was recorded at 23:07:16 and resolved at 23:12:16 on October 30, 2026. I also confirmed receiving both emails during the lab; the archive contains the send log, not mailbox-arrival screenshots.*
+![Lab topology showing the Windows and Ubuntu computers and their network connections](docs/images/lab-topology.png)
 
-| What I completed | Evidence |
+The lines show how the machines connect to the lab network. Ubuntu has a second connection for internet access. [Architecture details](docs/architecture.md) explain the parts and how they communicate.
+
+## What I got working
+
+| My goal | How I checked it |
 |---|---|
-| Connected Windows and Linux VMs across a Hyper-V lab network | [Network checks and Ubuntu setup](evidence/chapters/03-ubuntu-build.md) |
-| Installed Zabbix 7.4.16 with MariaDB, Apache, and PHP-FPM | [Database import through working dashboard](evidence/chapters/04-zabbix-stack.md) |
-| Collected Windows performance and service data with Agent 2 | [Agent installation and monitoring checks](evidence/chapters/05-windows-monitoring.md) |
-| Corrected clock synchronization and verified the selected time source | [Time-sync investigation](evidence/chapters/06-time-synchronization.md) |
-| Tested Gmail delivery and configured problem/recovery operations | [Alerting demonstration](docs/alerting.md) |
-| Correlated boot, service, and alert records without overstating the cause | [October 30 incident report](docs/incidents/2026-10-30-monitoring-interruption.md) |
+| Get the lab computers talking to each other | I sent network test requests and checked the replies. |
+| Open a working monitoring dashboard | I fixed the website setup and reached the Zabbix dashboard. |
+| Collect useful information from Windows | I checked processor, memory, storage, and background-service readings. |
+| Get the computers using accurate time | I checked their clocks and the time sources they actually selected. |
+| Receive a problem email and a recovery email | I tested Gmail and checked the two recorded notification sends. |
+| Understand a monitoring interruption | I compared alert times with Windows startup and service records. |
 
-**The five-minute figure is the recorded problem duration. I did not measure fault-to-detection latency.** Agent unavailability also does not establish five minutes of AD or DNS downtime.
+![Zabbix records showing problem and recovery emails marked Sent](evidence/screenshots/archive/screenshot_139.png)
 
-## How the lab fits together
+In this screenshot, Zabbix recorded a problem at **23:07:16** and a recovery at **23:12:16** on October 30, 2026. Both email records say **Sent**. I also confirmed receiving both emails during the lab, although I did not save screenshots of their arrival times.
 
-![Lab topology showing Hyper-V, Windows and Ubuntu VMs, and the two virtual switches](docs/images/lab-topology.png)
+**The five minutes is how long Zabbix recorded the problem.** I did not measure how quickly it noticed the original failure. Losing the monitoring connection also does not prove that the Windows server's other services were down for those five minutes.
 
-The diagram uses role labels instead of real machine names or addresses. [Architecture and topology](docs/architecture.md) explains the two Ubuntu network interfaces and the management path.
+## What I had to work through
 
-## What took the most troubleshooting
+The network did not work the same way from every machine. One virtual computer could reach the Windows server while my physical computer could not. I checked the physical computer's lab address, corrected it, and tested again.
 
-The network checks taught me to test each path separately. The workstation could reach the directory server while the Hyper-V host still had an APIPA address on its lab adapter. Later, Apache was running but `/zabbix` returned a 404. Fixing the path exposed another issue: the browser showed PHP source. I checked the Apache modules and PHP-FPM handler before the frontend finally loaded.
+The Zabbix website also took several checks. At first the browser could not find the page. Later it displayed program code instead of a usable website. I checked the web server settings and how it passed requests to PHP, the software that builds the page, until the dashboard loaded.
 
-Time synchronization was another useful lesson. A running NTP service and a successful configuration command were not enough. I checked Chrony's offset and access rules, then checked the time source Windows was actually using. The final status showed the Linux server as the Windows NTP source.
+A clock warning gave me another problem to investigate. Turning on a time service was not enough: I had to check that the clocks were actually synchronized and using the intended source.
 
-During the October 30 investigation, I found an unexpected-shutdown event whose message referred to October 28. Keeping the event's recording time separate from the shutdown it described prevented me from writing the wrong incident story.
+Finally, I found a shutdown record written on October 30 that described something that happened on October 28. Reading the full message kept me from mixing two separate events into one explanation.
 
-## Read the project
+## Where to start
 
-- **[Short screenshot walkthrough](evidence/README.md):** the key decisions, failures, and results.
-- **[All 142 annotated screenshots](evidence/archive.md):** seven chapters covering the full supplied archive.
-- **[Setup record](docs/setup.md):** the build sequence and verification checkpoints.
-- **[Troubleshooting notes](docs/troubleshooting.md):** symptoms, checks, and what each result established.
-- **[October 30 incident](docs/incidents/2026-10-30-monitoring-interruption.md)** and **[October 28 shutdown finding](docs/incidents/2026-10-28-unclean-shutdown.md)**.
-- **[Evidence limits](docs/verification.md)**.
+- **[Short visual walkthrough](evidence/README.md):** the main problems, checks, and results in plain language.
+- **[All 142 screenshots](evidence/archive.md):** an explanation for every image, organized into seven chapters.
+- **[Build steps](docs/setup.md):** how I put the lab together.
+- **[Email alerts](docs/alerting.md):** how the problem and recovery messages worked.
+- **[Troubleshooting notes](docs/troubleshooting.md):** what failed and how I narrowed it down.
+- **[October 30 investigation](docs/incidents/2026-10-30-monitoring-interruption.md)** and **[October 28 shutdown finding](docs/incidents/2026-10-28-unclean-shutdown.md)**.
+- **[What the evidence can and cannot show](docs/verification.md)**.
 
-## What I would improve next
+## What I would do next
 
-For the next controlled outage test, I would record the exact service-stop time, fresh item timestamps after recovery, and mailbox arrival times. That would let me measure detection and notification delays separately. I would also harden the lab's web and agent connections, which the captured setup shows without encryption, before treating it as a model for a production deployment.
+For another controlled test, I would record exactly when I stopped the agent, when Zabbix detected the problem, and when each email arrived. That would let me measure the different delays instead of guessing. I would also improve the security of the website and monitoring connections before using this setup as a model for a production system.
 
-The repository remains private while I review the sanitized evidence for public release.
+The repository remains private while I review it for public release.
