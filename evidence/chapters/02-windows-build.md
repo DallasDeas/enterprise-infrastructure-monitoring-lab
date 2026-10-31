@@ -2,82 +2,82 @@
 
 [Walkthrough](../README.md) · [Full archive](../archive.md)
 
-I first worked on another Windows virtual machine and checked its installation and network connection. These screenshots show that early part of the project. The final monitoring system uses Ubuntu instead; this section does not show a finished monitoring application on Windows.
+This section records an early Windows monitoring VM build, including OS installation, adapter configuration, routing, and DNS checks. I retained this branch as part of the project history. The final monitoring platform runs on Ubuntu; these captures do not establish a completed PRTG deployment.
 
 ## 014 — An early Windows monitoring VM
 
-I checked an early Windows virtual machine with four virtual processors and 4 GB of starting memory. This was part of an earlier build path. The final monitoring system documented later runs on Ubuntu instead.
+I inspected a Generation 2 Windows VM with four virtual processors and 4 GB of startup memory. This was an early branch of the build, before the Ubuntu monitoring server documented later.
 
 ![Screenshot 014: An early Windows monitoring VM](../screenshots/archive/screenshot_014.png)
 
 ## 015 — Checking that VM's disk and network
 
-I checked that this Windows virtual machine had a lab-network connection and a virtual disk that could grow up to 100 GB. These checks showed that the machine was prepared; they did not show a finished monitoring system.
+I checked its lab-switch connection and 100 GB dynamic virtual disk. This screenshot records infrastructure preparation; it does not demonstrate a working monitoring application on that Windows VM.
 
 ![Screenshot 015: Checking that VM's disk and network](../screenshots/archive/screenshot_015.png)
 
 ## 016 — Starting Windows Server setup
 
-I started the Windows Server installation and reviewed the language and keyboard settings. This was the beginning of setting up the operating system on the early Windows virtual machine.
+I worked through the Windows Server installer language and keyboard screen for the early Windows VM.
 
 ![Screenshot 016: Starting Windows Server setup](../screenshots/archive/screenshot_016.png)
 
 ## 017 — Reviewing installation choices
 
-I reached the screen asking how to install Windows. I kept it as a record of the installation process, but this image alone does not show which option I selected next.
+I reached the Windows installation-type screen. This image captures the available choices, rather than proving a final selection by itself.
 
 ![Screenshot 017: Reviewing installation choices](../screenshots/archive/screenshot_017.png)
 
 ## 018 — Selecting the Windows disk
 
-I checked the disk that Windows would be installed on. The installer showed 100 GB of empty space available inside the virtual machine.
+The installer showed a 100 GB unallocated target disk. I documented the storage available to the guest before the installation continued.
 
 ![Screenshot 018: Selecting the Windows disk](../screenshots/archive/screenshot_018.png)
 
 ## 019 — Reaching Server Manager
 
-I reached the Windows Server desktop and its management screen after installation. The operating system was available, but I still needed to check its network connection before using it in the lab.
+The Windows Server desktop and Server Manager were available after installation. I still had networking to check before treating this VM as usable.
 
 ![Screenshot 019: Reaching Server Manager](../screenshots/archive/screenshot_019.png)
 
 ## 020 — Checking the Windows VM identity
 
-I ran hostname to check which virtual computer I was using. When several machines are open at once, this helps avoid making a change on the wrong one. I covered the actual machine name in the shared screenshot.
+I used hostname to confirm which guest I was working in. The machine name is hidden in the published image.
 
 ![Screenshot 020: Checking the Windows VM identity](../screenshots/archive/screenshot_020.png)
 
-## 021 — A connection can be on without working
+## 021 — Separating link state from reachability
 
-The virtual machine reported that its network connection was on, but my physical computer still could not reach it. This showed me that an enabled connection and a working connection are two different things.
+The guest adapter reported Up, but a host-side ping failed and the neighbor entry remained Incomplete. I treated link state and end-to-end reachability as separate checks. The adapter being enabled did not establish a working path between the systems.
 
-![Screenshot 021: A connection can be on without working](../screenshots/archive/screenshot_021.png)
+![Screenshot 021: Separating link state from reachability](../screenshots/archive/screenshot_021.png)
 
 ## 022 — Verifying guest network and DNS
 
-I checked the virtual machine's address, set its DNS server, and tested the connection to the directory server. I received four replies and successfully looked up the server by name. Both the basic connection and that name lookup worked.
+I set the guest's DNS server, checked its address, and tested the directory server. The capture shows four successful ping replies and a successful DNS answer for the lab server name.
 
 ![Screenshot 022: Verifying guest network and DNS](../screenshots/archive/screenshot_022.png)
 
 ## 023 — Rechecking the host path
 
-I tested the connection from my physical computer to the early monitoring machine again, and it still failed. I kept this separate from the successful test between virtual machines because the requests were taking different paths.
+A separate host-to-monitoring-VM Test-Connection still failed. I kept this result alongside the successful guest test because they were different paths.
 
 ![Screenshot 023: Rechecking the host path](../screenshots/archive/screenshot_023.png)
 
 ## 024 — Comparing a failing and a working destination
 
-I compared two destinations from the same computer. The directory server answered, but the early monitoring machine did not. This narrowed down where to look, although it did not prove whether a firewall or another network setting was responsible.
+The monitoring VM timed out and its neighbor state was Stale, while the directory server still answered. This narrowed the problem without proving a particular firewall or routing cause.
 
 ![Screenshot 024: Comparing a failing and a working destination](../screenshots/archive/screenshot_024.png)
 
-## 025 — Checking the route to the internet
+## 025 — Inspecting the default route
 
-I checked which network connection the Windows machine used to reach destinations outside the lab. Its internet connection provided the default route—the usual way out—while its lab connection did not have a separate gateway.
+I checked the Windows VM's interfaces and routes. Its internet-facing adapter supplied the default route; the lab interface did not have a gateway.
 
-![Screenshot 025: Checking the route to the internet](../screenshots/archive/screenshot_025.png)
+![Screenshot 025: Inspecting the default route](../screenshots/archive/screenshot_025.png)
 
 ## 026 — Testing internet access and name resolution
 
-I successfully tested an internet connection and looked up a Microsoft website address. A separate lookup for a lab computer name was refused. This showed why I needed to test internet access and local name lookup separately.
+A TCP 443 test to a public address succeeded and a Microsoft DNS lookup worked. A lab-name lookup through the default resolver was refused, so internet access and lab DNS resolution needed separate checks.
 
 ![Screenshot 026: Testing internet access and name resolution](../screenshots/archive/screenshot_026.png)

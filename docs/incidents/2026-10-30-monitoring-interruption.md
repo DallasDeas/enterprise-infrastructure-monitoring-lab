@@ -1,61 +1,75 @@
-# October 30: checking why monitoring lost contact with Windows
+# October 30: investigating a monitoring interruption
 
-Zabbix recorded that it could not contact the Windows monitoring agent, then marked the problem resolved five minutes later. I checked Windows' own records to understand what happened around that time. The agent was later running, and both the problem and recovery emails were marked Sent.
+**Affected function:** Zabbix Agent 2 monitoring of the Windows directory server VM  
+**Observed outcome:** agent running, Zabbix problem resolved, problem and recovery notifications marked Sent  
+**Assessment:** consistent with a startup-associated interruption; exact initiating cause unproven
 
-The key distinction is that **losing monitoring does not automatically mean the whole server stopped working**. The agent is the background program that reports health information. I needed separate evidence to say whether the directory or DNS services were also unavailable.
+## Scope and initial assessment
 
-## What I checked first
+I investigated an availability alert affecting Windows agent monitoring. I had evidence of interrupted monitoring and subsequent recovery, but no evidence establishing a security compromise. I did not classify the event as malicious activity or claim containment, eradication, or forensic acquisition.
 
-I checked that the Windows agent was running and set to start automatically. I then looked at when Windows had started and when its log said the agent entered the Running state. A log is a computer's record of events, such as programs starting or stopping.
+My immediate analysis goals were to identify the affected monitoring function, establish the sequence of observed events, validate recovery, and distinguish supported findings from possible explanations.
 
-![Windows agent status and startup records](../../evidence/screenshots/archive/screenshot_140.png)
+I used the Windows service and boot records to check what happened around the alert. The important distinction was between a monitoring connection failing, the agent service running locally, and Zabbix later clearing the problem. Those are separate observations.
 
-I also read the full shutdown messages. One record written on October 30 described a shutdown on October 28. I kept that as a [separate finding](2026-10-28-unclean-shutdown.md), rather than assuming it described a new shutdown on October 30.
+## Time basis
 
-## Why I had to account for time zones
+Earlier build evidence shows Windows at UTC-07:00 (screenshot 106) and the Zabbix frontend configured for America/New_York (078, with UTC-04:00 displayed in 082). The conversation also identifies Windows as Pacific and Zabbix as Eastern. The incident screenshots do not independently capture both offsets again.
 
-Earlier screenshots showed Windows using a time zone seven hours behind UTC and Zabbix displaying New York time, four hours behind UTC. That creates a three-hour difference on the screens even when they refer to the same moment. UTC is a common reference time used to compare systems.
+The table therefore assumes those settings were unchanged on October 30. UTC entries are derived, not independently measured. I did not capture a simultaneous clock-offset measurement during this incident.
 
-I used those earlier settings to compare the incident times. I did not capture both time-zone settings again during this interruption, so the table assumes they had not changed. The converted times are calculations, not extra measurements.
-
-| What happened | Windows time / Pacific | Zabbix time / Eastern | Calculated UTC |
+| Event | Windows local / Pacific | Zabbix display / Eastern | Derived UTC |
 |---|---|---|---|
-| Windows reported its last startup | Oct 30 20:06:29 | Oct 30 23:06:29, converted | Oct 31 03:06:29Z |
-| Zabbix recorded the problem and problem email | Oct 30 20:07:16, converted | Oct 30 23:07:16 | Oct 31 03:07:16Z |
-| Windows recorded the agent starting | Oct 30 20:08:36 | Oct 30 23:08:36, converted | Oct 31 03:08:36Z |
-| Zabbix cleared the problem and recorded the recovery email | Oct 30 20:12:16, converted | Oct 30 23:12:16 | Oct 31 03:12:16Z |
+| Last boot reported by Windows | Oct 30 20:06:29 | Oct 30 23:06:29 | Oct 31 03:06:29Z |
+| Zabbix problem and problem send | Oct 30 20:07:16, derived | Oct 30 23:07:16 | Oct 31 03:07:16Z |
+| Event 7036: Agent 2 entered Running | Oct 30 20:08:36 | Oct 30 23:08:36 | Oct 31 03:08:36Z |
+| Zabbix resolution and recovery send | Oct 30 20:12:16, derived | Oct 30 23:12:16 | Oct 31 03:12:16Z |
 
-## What the Windows record showed
+## What I checked
 
-I searched for agent service events between 20:00 and 20:20 in Windows' displayed time. The result showed Event 7036 at 20:08:36, saying the agent had entered the Running state. An event number identifies a type of log message; 7036 records a service state change.
+1. I checked Agent 2 and found Running with Automatic startup in the recovery evidence.
+2. I read the Windows last-boot value and startup/shutdown events around the boot window.
+3. I opened the shutdown-event messages. Event 6008 referred to an October 28 shutdown, so I recorded it as a [separate finding](2026-10-28-unclean-shutdown.md).
+4. I queried System Events 7031, 7034, and 7036 for Agent 2 within the displayed 20:00–20:20 Windows-local window. The returned result showed Event 7036 at 20:08:36: the service entered Running. No crash record appeared in this bounded output.
+5. I compared that result with the resolved Zabbix problem and the two Gmail send records.
 
-![Windows record showing the agent entering Running](../../evidence/screenshots/archive/screenshot_142.png)
+![Service state and boot evidence](../../evidence/screenshots/archive/screenshot_140.png)
 
-My search included crash-related events 7031 and 7034, but none appeared in that result. That means I found no crash record in this limited search. It does not prove the agent had never crashed or that every possible record had been checked.
+![Agent service event](../../evidence/screenshots/archive/screenshot_142.png)
 
-## What the sequence tells me
+## Working explanations and evidence
 
-Using the time-zone assumption above, Windows started 47 seconds before Zabbix recorded the problem. The agent then started before Zabbix cleared it. Zabbix also showed a recent-restart warning. These details suggest that the interruption was associated with startup, but they do not prove what originally caused it.
+| Explanation I evaluated | Evidence available | Assessment |
+|---|---|---|
+| Interruption associated with Windows startup | Last-boot value, recent-restart warning, and subsequent Agent 2 Running event | Consistent with the sequence under the stated time-zone assumption; initiating cause not proven |
+| Agent service crashed | No 7031 or 7034 event returned in the bounded query | Not established; the search scope does not exclude all possible crashes |
+| A displayed start command restored service | Agent already Running before that command in the elevated capture | Not supported as a proven recovery action |
+| The October 28 shutdown caused the October 30 alert | Historical shutdown message was recorded during the later startup | No demonstrated causal link |
+| Directory services and DNS were unavailable throughout the alert | Agent-availability record without direct service-outage measurements | Not established |
 
-There were three minutes and 40 seconds between the agent's Running event and Zabbix clearing the problem. Zabbix checks information periodically and uses rules to clear warnings, so those settings could affect that gap. I did not capture enough of the settings and reading history to prove that explanation.
+I kept these as separate explanations because each would require different supporting evidence. A plausible timeline is not the same as a confirmed root cause.
 
-I also checked whether my start command had restored the agent. One screenshot shows a failed attempt without administrator permissions. The next administrator-window screenshot already shows the agent running before the displayed start command. I therefore cannot credit that command as the fix. The earlier deliberate stop test also has no timestamp tying it to this event.
+## Findings and interpretation
 
-## What five minutes means here
+Under the stated time conversion, Windows boot preceded the problem by 47 seconds. The agent's Running event followed the problem and preceded recovery. Together with the recent-restart warning in Zabbix, this supports a startup association. It does not establish the actual beginning of unavailability or a specific root cause.
 
-| Question | What I can say |
-|---|---|
-| How long was the recorded Zabbix problem open? | Five minutes, from 23:07:16 to 23:12:16. |
-| How quickly did Zabbix notice the original failure? | I did not measure that; the exact failure start was not captured. |
-| How long did the emails take to reach the inbox? | I did not capture independent arrival times. |
-| Were directory services or DNS down for five minutes? | This monitoring record does not establish that. |
+The interval from the Running event to Zabbix recovery was 3m 40s under the same assumption. Polling or trigger recovery behavior could contribute, but the effective configuration and item history needed to prove that explanation were not captured.
 
-![Resolved monitoring problem with a separate restart warning still visible](../../evidence/screenshots/archive/screenshot_138.png)
+I also kept the service-command evidence honest. Screenshot 135 shows a non-elevated start attempt failing. Screenshot 136 shows the agent already Running before the displayed Start-Service command. That command cannot be credited as a proven fix. The earlier deliberate Stop-Service capture (102) has no timestamp establishing that it initiated this October 30 event.
 
-## How I confirmed recovery
+| Measurement | Result | What it means |
+|---|---|---|
+| Recorded Zabbix problem duration | 5m 00s | 23:12:16 minus 23:07:16 |
+| Fault-to-detection latency | Not measured | Actual fault onset was not captured |
+| Mailbox delivery latency | Not measured | Independent receipt timestamps were not captured |
+| AD/DNS service downtime | Not established | Agent availability is not a direct application-outage measurement |
 
-The Windows agent was running, Zabbix marked the problem resolved, and the two Gmail records said Sent. I also confirmed receiving both emails during the lab, although the screenshots show the send records rather than inbox arrival times. The separate restart warning was still visible, so I did not describe every warning as cleared at that moment.
+![Resolved problem and separate restart warning](../../evidence/screenshots/archive/screenshot_138.png)
 
-For a repeat test, I would record the exact time I stopped the agent, the time Zabbix noticed it, fresh readings after recovery, and when each email arrived. Those checks would let me measure the delays and explain the sequence more confidently.
+## Recovery validation and follow-up
 
-[Email demonstration](../alerting.md) · [Full investigation screenshots](../../evidence/chapters/07-alerting-and-investigation.md)
+The agent was Running / Automatic, the Zabbix problem resolved, and both Gmail records showed Sent. I confirmed receiving both emails during the lab conversation; that confirmation is separate from the screenshot evidence. The recent-restart warning was still active in screenshot 138, so I do not claim that every warning had cleared at that instant.
+
+For a repeat test, I would capture the fault command with an offset-bearing timestamp, effective trigger settings, fresh item values after recovery, and mailbox arrival times. That would make the timing conclusions stronger without guessing at the missing intervals.
+
+[Notification demonstration](../alerting.md) · [Full investigation chapter](../../evidence/chapters/07-alerting-and-investigation.md)

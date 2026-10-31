@@ -1,61 +1,57 @@
-# How I built and checked the lab
+# How I built and checked it
 
 [Project overview](../README.md) · [Full screenshot archive](../evidence/archive.md)
 
-I built this in stages so I could check one part before relying on it for the next. These are my build notes, not a script that automatically recreates everything. The original Windows directory server and workstation already existed when the screenshot sequence began.
+This is a record of my build, including the checks that failed. It is not an unattended installer or a complete export of every setting. The directory server and workstation already existed when this screenshot sequence began; the archive does not include their original domain-promotion or domain-join steps.
 
-## 1. Connect the lab computers
+## 1. Establish the network foundation
 
-I used Hyper-V, which lets one physical computer run several virtual computers. I started the existing machines and checked their virtual switches, the software connections between them. I compared their network addresses and tested whether they could answer one another.
+I opened an elevated PowerShell session, checked VM state and switch membership, and started the existing lab machines. I compared the directory server and workstation addressing before testing connectivity. The host's lab adapter had an APIPA address, so I assigned it a static address in the lab's /24 subnet and confirmed the server then answered four probes.
 
-My physical computer had a fallback address on its lab connection. I assigned an address in the lab's network range, tested again, and received four replies from the Windows server.
+**Checkpoint:** VM Running state, expected switch membership, correct adapter address, and a successful test from each relevant source. [Screenshots 001–013](../evidence/chapters/01-network-foundation.md).
 
-**My check:** the machines were running and the corrected connection answered requests. [Screenshots 001–013](../evidence/chapters/01-network-foundation.md).
+## 2. Build the Ubuntu guest
 
-## 2. Build the Linux monitoring computer
+After an early Windows VM branch, I prepared a Generation 2 Ubuntu VM with two virtual processors, 4 GB startup memory, and a 60 GB dynamic disk. I checked the mounted ISO and Secure Boot template, installed Ubuntu 26.04.1 LTS using LVM, and completed package updates. I confirmed OpenSSH was listening and connected from Windows.
 
-After the early Windows build, I created an Ubuntu machine with two virtual processors, 4 GB of starting memory, and a 60 GB virtual disk. I checked the installer, installed the operating system, and updated its software.
+I used two adapters: DHCP on the Default Switch for internet access and a static address on the internal lab switch. I wrote a separate Netplan file for the lab interface, set its permissions to 600, generated the configuration, and checked the resulting addresses and routes. A later login showed the lab address remained in place. An HTTPS header request to ubuntu.com returned HTTP/2 200.
 
-I set up SSH so I could manage Ubuntu from a Windows command window. I used two network connections: one with an automatically assigned address for internet access, and one with a fixed address for the lab. I edited the lab settings through Netplan, Ubuntu's network configuration system.
+**Checkpoint:** SSH access, static lab address, internet default route, and successful outbound request. [Screenshots 027–053](../evidence/chapters/03-ubuntu-build.md).
 
-**My check:** I could log in remotely, see the fixed lab address, and successfully request a page from ubuntu.com. [Screenshots 027–053](../evidence/chapters/03-ubuntu-build.md).
+## 3. Prepare the database and Zabbix server
 
-## 3. Set up monitoring and its database
+I used the official Zabbix 7.4 repository and checked the 7.4.16 package candidate. I verified MariaDB was active and enabled, created the Zabbix database with utf8mb4/utf8mb4_bin, granted the local application account database access, and tested its login. After installing the Zabbix components, I imported server.sql.gz and counted 207 tables.
 
-I installed Zabbix 7.4.16 from its official software source. I also set up MariaDB, the database where Zabbix stores its information. I created the database, gave the application account permission to use it, and tested that account's login.
+I checked the Zabbix service, its startup log, and whether it was enabled. The first service capture showed active but disabled; a later check showed enabled. These are separate checks because a running service can still fail to start on the next boot.
 
-I loaded Zabbix's required database structure and counted 207 tables afterward. I then checked both that Zabbix was running and that it was set to start automatically. Those are different checks: a program can be running now without being set to return after a reboot.
+**Checkpoint:** database access, populated schema, active server, and enabled startup. [Screenshots 054–064](../evidence/chapters/04-zabbix-stack.md).
 
-**My check:** the database had its structure, the application could access it, and the monitoring program was running with automatic startup enabled. [Screenshots 054–064](../evidence/chapters/04-zabbix-stack.md).
+## 4. Get the frontend working
 
-## 4. Repair the monitoring website
+I worked through a 404 response, an Apache ProxyTimeout configuration error, and PHP source displaying in the browser. I inspected the Zabbix alias, enabled the required proxy/FPM configuration, checked the PHP handler, and tested locally with curl. The frontend then reached the setup wizard.
 
-The dashboard depends on Apache, which serves the website, and PHP-FPM, which processes the code that builds its pages. At first the browser could not find the page. Then an Apache setting failed its check. Later the browser displayed raw program code instead of the dashboard.
+I reviewed the PHP prerequisites, configured the local database connection, selected America/New_York for the frontend display, and completed installation. The dashboard showed the Zabbix server running and monitoring itself.
 
-I checked where the website address pointed, corrected the web server configuration, and checked its connection to PHP-FPM. Once the setup page loaded, I connected it to the database, chose the New York display time zone, and completed installation.
+**Checkpoint:** Syntax OK, PHP-FPM active, HTML response, completed wizard, and working dashboard. [Screenshots 065–082](../evidence/chapters/04-zabbix-stack.md).
 
-**My check:** the website opened and the dashboard showed Zabbix running. [Screenshots 065–082](../evidence/chapters/04-zabbix-stack.md).
+## 5. Add Windows monitoring
 
-## 5. Collect Windows health information
+I obtained Agent 2 7.4.16, enabled Hyper-V's Guest Service Interface during transfer preparation, and confirmed the MSI was inside the Windows Server guest. I installed the agent, configured the monitoring server and listen port 10050, and verified Running / Automatic plus the listening socket.
 
-I installed Zabbix Agent 2 on Windows. This background program answers requests from the monitoring server. I checked that it was running automatically and accepting connections on port 10050, its numbered network entry point.
+In Zabbix I added the Windows host, its agent interface, the Windows servers group, and the Windows by Zabbix agent template. I checked green availability and actual collected items, including DNS Server and DNS Client service states. I also captured a deliberate agent stop and the frontend's unavailable/available states.
 
-I added Windows to Zabbix and selected a template, a ready-made collection of Windows checks. I then reviewed actual readings for the machine and its services. I also captured a deliberate test where I stopped the agent.
+**Checkpoint:** service, listener, available agent interface, and recent data. [Screenshots 083–104](../evidence/chapters/05-windows-monitoring.md).
 
-**My check:** Zabbix could contact Windows and collect information, including the DNS services' running states. [Screenshots 083–104](../evidence/chapters/05-windows-monitoring.md).
+## 6. Correct time synchronization
 
-## 6. Get the clocks synchronized
+I compared Windows and Linux time status after Zabbix raised a clock warning. Chrony reported a roughly 221.5-second slow clock. I checked its source, stepped the clock, and verified synchronization afterward. I then corrected Chrony's access rules for the Windows NTP client and checked UDP 123.
 
-Zabbix warned that the computers' clocks disagreed. I checked Chrony, Ubuntu's timekeeping program, and found its clock was about 221.5 seconds slow. I corrected it and checked again until Ubuntu reported synchronization.
+Windows initially continued using the VM integration provider after a successful manual-peer configuration command. The final capture showed the Linux server as its source, Stratum 4, and Leap Indicator 0. The exact intervening provider change is not in the screenshots, so this record does not prescribe an unverified fix.
 
-I then allowed Windows to request time from Chrony. Windows kept reporting its previous time source after an initial settings change, so I checked what it actually used. The final result showed the Linux server as the selected source. The screenshots do not show every intervening Windows change.
+**Checkpoint:** actual selected source and synchronized state on both systems. [Screenshots 105–123](../evidence/chapters/06-time-synchronization.md).
 
-**My check:** both systems reported synchronization, and Windows identified the intended time server. [Screenshots 105–123](../evidence/chapters/06-time-synchronization.md).
+## 7. Add notifications and investigate recovery
 
-## 7. Send alerts and investigate a real recorded interruption
+I tested Gmail media delivery, enabled the recipient, and created a host-and-trigger-specific action with problem and recovery operations. The later Action log recorded both sends. I compared the October 30 monitoring event with Windows boot and service records and documented the October 28 shutdown message separately.
 
-I tested Gmail delivery, selected who should receive messages, and added a rule for losing contact with the Windows agent. I configured one email for the problem and another for recovery.
-
-For the October 30 interruption, I compared these alerts with Windows' startup and service records. I also separated an older October 28 shutdown from the newer event.
-
-**My check:** the email test succeeded, both notification records said Sent, and the agent was shown running after the interruption. [Email results](alerting.md) · [Investigation](incidents/2026-10-30-monitoring-interruption.md).
+**Checkpoint:** successful media test, enabled action, problem send, recovery send, and service-event evidence. [Alerting demonstration](alerting.md) and [incident report](incidents/2026-10-30-monitoring-interruption.md).

@@ -2,118 +2,118 @@
 
 [Walkthrough](../README.md) · [Full archive](../archive.md)
 
-I wanted an email when monitoring lost contact with Windows and another when it recovered. After setting that up, I investigated the October 30 interruption by comparing the alerts with Windows' own records. I found useful evidence about startup and recovery, but not enough to prove exactly what caused the interruption.
+I configured Gmail notification actions and investigated the October 30 agent-availability interruption. My analysis separates the alert condition, local service state, recovery notification, and historical shutdown evidence. I used Windows events and Zabbix records to build a conditional timeline without claiming a root cause that the captures do not prove.
 
-## 124 — Opening the email settings
+## 124 — Opening email media settings
 
-I opened Zabbix's email settings. The form initially contained generic examples for a mail server; it did not yet show my completed Gmail setup.
+I opened the email media form, which initially contained generic SMTP examples. These are not the final Gmail settings.
 
-![Screenshot 124: Opening the email settings](../screenshots/archive/screenshot_124.png)
+![Screenshot 124: Opening email media settings](../screenshots/archive/screenshot_124.png)
 
 ## 125 — Preparing app-password access
 
-I opened Google's page for creating an app password, which is a separate password for an application to use. This screenshot does not show a generated password, and I did not include one in the repository.
+I reached Google's App passwords creation screen. The screenshot does not contain a generated app password, and none is included in this repository.
 
 ![Screenshot 125: Preparing app-password access](../screenshots/archive/screenshot_125.png)
 
-## 126 — Connecting the browser through SSH
+## 126 — Opening an SSH tunnel
 
-I opened an SSH tunnel, a connection that lets my local browser reach a web service through the remote-login connection. I used local port 8080 to reach the monitoring server's web service on port 80.
+I opened an SSH local forward from port 8080 to the monitoring server's loopback web service on port 80. Private connection details are covered.
 
-![Screenshot 126: Connecting the browser through SSH](../screenshots/archive/screenshot_126.png)
+![Screenshot 126: Opening an SSH tunnel](../screenshots/archive/screenshot_126.png)
 
 ## 127 — Using the tunneled login page
 
-I reached the Zabbix login page through the tunnel. The address 127.0.0.1 means this computer, so the browser was using the local end of the tunnel rather than directly showing the server's lab address.
+I reached the Zabbix login page through 127.0.0.1:8080 on my local machine.
 
 ![Screenshot 127: Using the tunneled login page](../screenshots/archive/screenshot_127.png)
 
 ## 128 — Selecting Gmail as the provider
 
-I selected Gmail as the email provider in Zabbix. The screenshot shows the setup choice with blank credential fields, not a password someone else could reuse.
+I selected Gmail and username/password authentication in Zabbix. The credential fields are blank in this capture; it documents the configuration step, not the secret values.
 
 ![Screenshot 128: Selecting Gmail as the provider](../screenshots/archive/screenshot_128.png)
 
-## 129 — Testing the Gmail connection
+## 129 — Testing the Gmail media type
 
-I sent a test through Zabbix's Gmail connection and the test reported success. I checked this first so I could separate email-setup problems from problems in the automatic alert rule.
+The media test reported success. This validated the send path before I relied on a trigger action.
 
-![Screenshot 129: Testing the Gmail connection](../screenshots/archive/screenshot_129.png)
+![Screenshot 129: Testing the Gmail media type](../screenshots/archive/screenshot_129.png)
 
-## 130 — Choosing who receives alerts
+## 130 — Enabling the recipient media
 
-I enabled email delivery for the chosen recipient at every severity level and at all times. This meant the recipient's schedule would not prevent this demonstration's alerts from being sent. I covered the email address.
+I checked the user's Gmail media entry, with all severities and a continuous schedule enabled. The recipient address is removed.
 
-![Screenshot 130: Choosing who receives alerts](../screenshots/archive/screenshot_130.png)
+![Screenshot 130: Enabling the recipient media](../screenshots/archive/screenshot_130.png)
 
-## 131 — Choosing when to send an alert
+## 131 — Scoping the alert action
 
-I limited the alert rule to two conditions: the selected Windows server and its unavailable monitoring agent. Both had to match. This kept the email action focused on the specific problem I wanted to demonstrate.
+I set the action conditions to the directory server and its agent-unavailable trigger, combined with AND. This kept the demonstration focused on a specific condition.
 
-![Screenshot 131: Choosing when to send an alert](../screenshots/archive/screenshot_131.png)
+![Screenshot 131: Scoping the alert action](../screenshots/archive/screenshot_131.png)
 
 ## 132 — Adding the problem notification
 
-I configured Zabbix to send a Gmail message to the chosen user when that alert action ran. The Immediately option means no extra delay was configured for that step; it does not mean Zabbix detects every failure instantly.
+I configured the problem operation to send through Gmail to the designated Zabbix user immediately when the action ran.
 
 ![Screenshot 132: Adding the problem notification](../screenshots/archive/screenshot_132.png)
 
 ## 133 — Adding recovery notification
 
-I added a second message for when the problem cleared. I wanted the person receiving the first alert to also know when monitoring had recovered.
+I added Notify all involved as the recovery operation. I wanted the same alert chain to close the loop when the problem cleared.
 
 ![Screenshot 133: Adding recovery notification](../screenshots/archive/screenshot_133.png)
 
 ## 134 — Confirming the action was enabled
 
-Zabbix confirmed that the alert action had been added, and the list showed it enabled. I then had both the problem message and recovery message configured for the demonstration.
+Zabbix reported the action was added, and the action list showed it enabled.
 
 ![Screenshot 134: Confirming the action was enabled](../screenshots/archive/screenshot_134.png)
 
 ## 135 — Running into service permissions
 
-I tried to start the Windows agent without administrator permissions, and the command failed. The agent was shown as stopped in this capture. This error explained why that command failed, but not what originally caused the monitoring interruption.
+A non-elevated service-start attempt failed because it could not open the service. The service query in this capture showed Stopped. This command error alone does not explain the later incident's cause.
 
 ![Screenshot 135: Running into service permissions](../screenshots/archive/screenshot_135.png)
 
-## 136 — Checking again as an administrator
+## 136 — Assessing the claimed recovery action
 
-I checked again in an administrator window. The agent was already running before the start command shown below it, so I could not honestly claim that this command brought it back.
+The elevated PowerShell capture showed Agent 2 already Running before the displayed Start-Service command. I therefore could not identify that command as the recovery action. I kept the observed state separate from assumptions about what restored it.
 
-![Screenshot 136: Checking again as an administrator](../screenshots/archive/screenshot_136.png)
+![Screenshot 136: Assessing the claimed recovery action](../screenshots/archive/screenshot_136.png)
 
 ## 137 — Checking availability during the interruption
 
-Zabbix showed the Windows monitoring agent as unavailable. I used the detailed problem and email records that followed to check the event times instead of relying only on this red indicator.
+The frontend showed the Windows agent unavailable. I used the subsequent problem and action logs to establish the recorded event times.
 
 ![Screenshot 137: Checking availability during the interruption](../screenshots/archive/screenshot_137.png)
 
 ## 138 — Recording the five-minute problem
 
-Zabbix recorded the October 30 monitoring problem from 23:07:16 to 23:12:16, then marked it resolved. That is a five-minute recorded problem. A separate warning about a recent restart was still visible.
+The October 30 problem entry ran from 23:07:16 to 23:12:16 and was resolved. A separate recent-restart warning was still active in this capture.
 
 ![Screenshot 138: Recording the five-minute problem](../screenshots/archive/screenshot_138.png)
 
-## 139 — Checking both Gmail notifications
+## 139 — Validating problem and recovery notifications
 
-I checked the email action log and found both the problem message and recovery message marked Sent through Gmail. The five-minute value describes the recorded problem's duration; it does not tell me how quickly the original failure was detected.
+The October 30 Action log recorded both the problem and recovery notifications as Sent through Gmail. The five-minute interval describes the recorded problem duration. It does not measure fault-to-detection latency or mailbox delivery delay.
 
-![Screenshot 139: Checking both Gmail notifications](../screenshots/archive/screenshot_139.png)
+![Screenshot 139: Validating problem and recovery notifications](../screenshots/archive/screenshot_139.png)
 
 ## 140 — Checking service and boot context
 
-I confirmed that the agent was running and set to start automatically, then checked when Windows had last started. I also read nearby startup records to understand what was happening around the interruption.
+I confirmed the agent was Running with Automatic startup and read the last boot time. Startup-related events were recorded around the same boot window.
 
 ![Screenshot 140: Checking service and boot context](../screenshots/archive/screenshot_140.png)
 
 ## 141 — Reading the shutdown message carefully
 
-I read the full unexpected-shutdown message carefully. Windows recorded it on October 30, but the message described a shutdown on October 28 at 18:45:59. I kept those two dates separate in my explanation.
+Event 6008 was recorded on October 30, but its message named an unexpected shutdown on October 28 at 18:45:59 Windows local time. I documented that as a separate historical finding.
 
 ![Screenshot 141: Reading the shutdown message carefully](../screenshots/archive/screenshot_141.png)
 
-## 142 — Checking the agent's service event
+## 142 — Reviewing service-state evidence
 
-I searched the Windows service log between 20:00 and 20:20. It showed the agent entering the Running state at 20:08:36. No crash event appeared in that limited search, which is different from proving the agent had never crashed.
+I queried service events within the 20:00–20:20 Windows-local window. The result showed Event 7036 at 20:08:36 for Agent 2 entering Running. No crash event appeared in that bounded result; I did not treat the absence as proof that no crash could have occurred outside the search scope.
 
-![Screenshot 142: Checking the agent's service event](../screenshots/archive/screenshot_142.png)
+![Screenshot 142: Reviewing service-state evidence](../screenshots/archive/screenshot_142.png)
