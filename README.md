@@ -6,7 +6,7 @@ I built this lab to practice infrastructure monitoring and the investigation wor
 
 The main case study is an October 30 monitoring interruption. I correlated Zabbix alerts with Windows startup and service events, accounted for time-zone differences, and evaluated what the available records could establish about recovery. I also identified an older shutdown event that needed to remain separate from the current investigation.
 
-This is a home lab focused on availability monitoring and incident analysis. It demonstrates troubleshooting and evidence interpretation; it does not establish a security compromise or production incident-response experience.
+I used this home lab to develop a structured approach to availability monitoring, troubleshooting, and incident analysis.
 
 ## Environment and scope
 
@@ -14,7 +14,7 @@ This is a home lab focused on availability monitoring and incident analysis. It 
 
 I used Hyper-V to host the lab. The Windows Server VM provided Active Directory Domain Services (AD DS), DNS, and Zabbix Agent 2. Ubuntu hosted Zabbix, MariaDB, Apache, PHP-FPM, and Chrony for time synchronization. Ubuntu had separate internet-facing and internal lab interfaces.
 
-Zabbix used passive agent checks on TCP 10050 to collect Windows telemetry—service states and system measurements. Windows later selected Ubuntu as its NTP time source on UDP 123. [Architecture and traffic paths](docs/architecture.md).
+Zabbix used passive agent checks on TCP 10050 to collect Windows telemetry, including service states and system measurements. Windows later selected Ubuntu as its NTP time source on UDP 123. [Architecture and traffic paths](docs/architecture.md).
 
 ## What I implemented and validated
 
@@ -55,6 +55,6 @@ The incident review reinforced the same approach: a local Running state does not
 
 ## Next validation steps
 
-For a repeat test, I would capture an exact fault-injection timestamp, the effective trigger settings, fresh telemetry after recovery, and mailbox-arrival times. This would allow me to measure detection and notification delays separately. I would also harden the web and agent connections before treating this lab as a model for a production deployment.
+For a repeat test, I would capture an exact fault-injection timestamp, the effective trigger settings, fresh telemetry after recovery, and mailbox-arrival times. This would allow me to measure detection and notification delays separately. I would also strengthen the web and agent connections with encryption.
 
 The repository remains private pending my review for public release.

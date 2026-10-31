@@ -6,7 +6,7 @@
 
 ## Scope and initial assessment
 
-I investigated an availability alert affecting Windows agent monitoring. I had evidence of interrupted monitoring and subsequent recovery, but no evidence establishing a security compromise. I did not classify the event as malicious activity or claim containment, eradication, or forensic acquisition.
+I investigated an availability alert affecting Windows agent monitoring by reviewing the interruption, correlating system events, and validating recovery.
 
 My immediate analysis goals were to identify the affected monitoring function, establish the sequence of observed events, validate recovery, and distinguish supported findings from possible explanations.
 
