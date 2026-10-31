@@ -1,23 +1,36 @@
 # Architecture and topology
 
-## Component inventory
+[Project overview](../README.md) · [Setup record](setup.md)
 
-| Role | Components | Verification level |
+I used Hyper-V to keep the lab on one physical host. The screenshots establish an internal lab switch and the Default Switch. The lab network carried communication between the Windows directory server, workstation, host adapter, and Ubuntu monitoring server. Ubuntu also had a separate adapter on the Default Switch for internet access.
+
+| Component | Observed role and configuration | Evidence |
 |---|---|---|
-| Virtualization | Hyper-V host and lab virtual networking | Hyper-V console visible in original Windows evidence; network isolation described in conversation |
-| Directory server VM | Windows Server 2022, Active Directory Domain Services, DNS | Platform/roles described in conversation; agent state and Windows events directly visible |
-| Monitoring VM | Ubuntu Server, Zabbix, MariaDB, Apache, Chrony | Stack described in conversation; Zabbix Action log directly visible |
-| Notification destination | Gmail mailbox | Gmail media type and Sent statuses visible; receipt confirmed by owner |
+| Hyper-V host | Internal lab switch, Default Switch, and a static /24 address on its lab adapter | Screenshots 003–012 |
+| Windows Server 2022 evaluation VM | Directory-services/DNS role, FSMO roles, Agent 2, static lab address | 005, 086, 091–099, 108 |
+| Windows 11 evaluation VM | Lab workstation with static addressing and directory-server DNS | 006–007 |
+| Ubuntu 26.04.1 LTS VM | Generation 2, 2 vCPU, 4 GB startup RAM, 60 GB dynamic disk | 027–041 |
+| Ubuntu eth0 | DHCP on the internet-facing Default Switch; default route | 047–052 |
+| Ubuntu eth1 | Static /24 address on the internal lab switch; no separate default route shown | 050–052 |
+| Monitoring stack | Zabbix 7.4.16, MariaDB 11.8.6, Apache, PHP 8.5 FPM | 054–082 |
+| Time service | Ubuntu Chrony synchronized externally; Windows later selected Ubuntu as its NTP source | 110–121 |
 
-## Logical paths
+The archive also contains an early Windows monitoring VM with 4 vCPU, 4 GB RAM, and a 100 GB dynamic disk. I document that branch separately. Its setup captures do not prove a working PRTG installation, and it is not part of the final Zabbix monitoring path.
 
-1. The monitored Windows VM and Zabbix have a monitoring relationship through the lab network.
-2. Zabbix evaluates the agent-unavailability problem and its recovery.
-3. An action uses the Gmail media type to send problem and recovery notifications.
-4. Windows service and boot events provide independent investigation context.
+## Traffic and management paths
 
-The screenshots do not establish agent transport direction, configured ports, the virtual switch type, NAT arrangement, subnet, or the NTP hierarchy. No physical network topology is claimed. Chrony being installed does not establish that Windows uses it as its time source.
+```mermaid
+flowchart TB
+  A[Windows management session] -->|SSH: TCP 22| U[Ubuntu monitoring VM]
+  A -->|Local browser: 127.0.0.1:8080| T[SSH local forward]
+  T -->|Remote loopback: TCP 80| P[Apache and PHP-FPM]
+  P --> M[Local MariaDB database]
+  Z[Zabbix server on Ubuntu] -->|Passive checks: TCP 10050| D[Windows Agent 2]
+  D -->|NTP requests: UDP 123| C[Chrony on Ubuntu]
+  C --> N[External NTP source]
+  Z -->|Gmail media and trigger action| E[Problem and recovery notifications]
+```
 
-## Topology details still needed
+The Windows template and agent interface demonstrate passive polling. The installer still showed loopback in its active-check field; I do not claim a working active-check configuration. The loopback web address in the tunnel screenshot is the local management endpoint, not the Ubuntu VM's lab address.
 
-Record OS/software versions, VM resources, switch type and attachment, sanitized interface roles, DNS dependencies, agent active/passive mode, firewall rules, and time sources. Use documentation aliases and synthetic addresses if examples are necessary. Keep real hostnames, domain names, MAC addresses, and IP addresses out of public artifacts.
+I removed real hostnames, domain names, private addressing, MAC addresses, and account details from the shared evidence. Generic service names, port numbers, loopback addresses, and public package-source domains remain where they help explain the build. See the [full archive](../evidence/archive.md) for the numbered evidence.

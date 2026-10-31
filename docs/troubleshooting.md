@@ -1,48 +1,34 @@
-# Troubleshooting runbook
+# Troubleshooting notes from the build
 
-This runbook is a future-use guide. It is not a claim that every procedure below was executed during the documented incident.
+[Project overview](../README.md) · [Full evidence archive](../evidence/archive.md)
 
-| Symptom | Investigate first | Evidence to preserve |
+I kept the failed checks because they explain how I narrowed the problems down. A successful command was useful only when the next check showed the behavior I needed.
+
+| Symptom | What I checked or changed | What the next evidence showed |
 |---|---|---|
-| Agent unavailable | Guest power state, service state, connectivity, allowed peers, firewall and configured active/passive mode | Service output, Zabbix item errors, timestamps |
-| Service running but problem unresolved | Item freshness, server reachability, trigger and recovery expressions, evaluation windows | Item history and exact expression; do not infer availability from service state alone |
-| Email not received | Action match, recipient media, enabled periods/severity, send status, mail filtering | Sanitized action status and mailbox timestamps |
-| Mismatched times | Timezone display first, then synchronization source and offset | Timezone and time-service output from both systems |
-| Unexpected shutdown | Event message's prior-shutdown time, boot context, host events, crash evidence | Full event details retained privately; sanitized excerpts in repository |
+| Get-VM permission error | Used an elevated shell | VM inventory became available (001–002) |
+| Workstation reached the server; host could not | Checked the host's lab adapter and corrected its APIPA addressing | Four host-to-server replies (007–012) |
+| Guest adapter Up, but host path failing | Compared ping, neighbor state, routes, and DNS from different sources | Some paths worked while the monitoring-VM host path still failed; no single cause proven (021–026) |
+| Wrong media and malformed command during VM preparation | Inspected DVD drives and firmware separately | Ubuntu ISO present and Secure Boot template confirmed (028–030) |
+| SSH command rejected by PowerShell | Corrected the command syntax | Ubuntu remote login succeeded (045–046) |
+| Second Ubuntu NIC had no lab IPv4 address | Added static Netplan configuration and checked addresses/routes | Static lab address alongside the internet default route (048–052) |
+| Zabbix service active but disabled | Checked enabled state separately | Later output showed enabled (062–064) |
+| /zabbix returned 404 | Inspected the Apache configuration link and alias | Reached later web-configuration checks (065–066) |
+| Apache rejected ProxyTimeout | Investigated proxy configuration and reran configtest | Syntax OK (067–070) |
+| Browser displayed PHP source | Checked PHP-FPM, proxy_fcgi, enabled FPM configuration, and socket handler | Local request returned HTML and browser reached setup (069–074) |
+| Agent installed but collection needed verification | Checked service, listener, host interface, template, and Latest data | Running / Automatic, TCP 10050, green availability, collected values (091–097) |
+| Clock-skew warning | Compared actual time status and Chrony tracking | Linux clock was about 221.5 seconds slow (105–110) |
+| NTP active but Linux clock unsynchronized | Checked sources, ran makestep, and rechecked later | timedatectl eventually showed synchronized (111–113) |
+| Windows NTP client denied | Used chronyc accheck; inspected UFW and Chrony access configuration | Access allowed after configuration change (114–116) |
+| Windows peer command succeeded but source stayed VMIC | Queried configuration and actual source repeatedly | Final status selected Linux NTP; exact intervening change not captured (118–121) |
+| Start-Service could not open service | Checked elevation and queried current state | Elevated capture already showed Running before the displayed start command (135–136) |
 
-## Read-only Windows checks
+## The checks I would repeat during another interruption
 
-Run in the Windows guest. Output can contain identifiers; review it before sharing.
+1. Record the time with its offset, then check whether the VM is running and whether the monitoring server is reachable.
+2. On Windows, check Agent 2 state and its listening port. A local Running result does not prove the remote monitoring path is healthy.
+3. In Zabbix, inspect interface availability, the problem's trigger, and the most recent item timestamps.
+4. Compare Windows boot and service events with the problem and recovery times using an explicit time basis.
+5. Check the action log separately from the problem state. Then verify mailbox receipt separately from Sent.
 
-```powershell
-Get-Service -Name 'Zabbix Agent 2' |
-    Select-Object Name, Status, StartType
-Get-CimInstance Win32_OperatingSystem |
-    Select-Object LastBootUpTime
-Get-TimeZone | Select-Object Id, DisplayName
-w32tm /query /status
-```
-
-For the historical service-event window (Windows local time as shown in the evidence):
-
-```powershell
-Get-WinEvent -FilterHashtable @{
-    LogName = 'System'
-    Id = 7031,7034,7036
-    StartTime = [datetime]'2026-10-30T20:00:00'
-    EndTime = [datetime]'2026-10-30T20:20:00'
-} | Where-Object { $_.Message -match 'Zabbix Agent 2' } |
-    Select-Object TimeCreated, Id, Message
-```
-
-If logs have aged out, the command cannot reconstruct them. No matching result can also mean unavailable evidence; distinguish that from a successful query finding no relevant events. Avoid suppressing errors in a new investigation.
-
-## Read-only Ubuntu time checks
-
-```sh
-timedatectl status
-chronyc tracking
-chronyc sources -v
-```
-
-These are diagnostic examples for systems using systemd and Chrony. Selected sources may reveal addresses; redact them. For service diagnostics, use the actual installed unit names rather than assuming a package layout.
+For the October 30 case, I did not find enough evidence to name a proven root cause or a proven manual recovery command. That limit belongs in the incident report rather than being replaced with a cleaner story.

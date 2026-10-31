@@ -1,25 +1,32 @@
-# Automated Gmail alert demonstration
+# Gmail problem and recovery alerts
 
-## Observed result
+[Project overview](../README.md) · [Alerting screenshots](../evidence/chapters/07-alerting-and-investigation.md)
 
-The Zabbix Action log shows two automated Gmail notifications for the same agent-unavailability problem. The problem title includes `Zabbix agent is not available (for 3m)` and both records show `Sent`.
+I wanted the lab to tell me when monitoring failed and when it recovered. I first tested the email path, then connected it to a specific Zabbix trigger. That kept a successful test email separate from proof that the trigger action actually ran.
 
-| Record | Displayed time, October 30, 2026 | Evidence |
+| Step | What I configured or checked | Screenshot |
 |---|---|---|
-| Problem notification | 23:07:16 | Gmail media type; Sent status |
-| Recovery notification | 23:12:16 | Gmail media type; Sent status; subject reports 5m 0s |
-| Mailbox receipt | Exact times not captured | Owner explicitly confirmed receiving both emails in the source conversation |
+| Provider | Gmail with username/password authentication; app-password preparation screen captured separately | 125, 128 |
+| Send test | Media test reported success | 129 |
+| Recipient | Enabled Gmail media, all severities, continuous schedule | 130 |
+| Conditions | Directory-server host AND its agent-unavailable trigger | 131 |
+| Problem operation | Send to the designated Zabbix user through Gmail, starting immediately | 132 |
+| Recovery operation | Notify all involved | 133 |
+| Enabled action | Action added and enabled | 134 |
+| Actual result | Problem and recovery records both marked Sent | 139 |
 
-![Redacted Zabbix action log](../evidence/screenshots/04-gmail-action-log.png)
+![Successful media test](../evidence/screenshots/archive/screenshot_129.png)
 
-The log's send status and the owner's receipt confirmation support an end-to-end demonstration for this pair of messages. They do not establish a general delivery success rate or delivery latency. The `for 3m` text is part of the problem title; the full trigger expression and polling history were not captured, so it is not a measured detection time.
+The initial generic SMTP form is an intermediate screen, not the final Gmail configuration. The screenshots do not preserve a complete final SMTP configuration or any app password. I have not filled in missing port or TLS settings from assumptions.
 
-## Configuration record
+![Problem and recovery operations](../evidence/screenshots/archive/screenshot_133.png)
 
-Observed: a Gmail media type and an action for agent outage notifications. Sender settings, authentication method, recipient media settings, action conditions, escalation steps, and recovery-operation configuration are not visible in the available screenshot.
+## What the October 30 result proves
 
-For a reconstruction, verify the email media type, configure credentials only in the live application, associate the intended recipient, and check both problem and recovery operations. Zabbix documents email media configuration and notes that media-type exports can contain a clear-text password; do not commit raw exports. [Official Zabbix email documentation](https://www.zabbix.com/documentation/current/en/manual/config/notifications/media/email).
+The Action log records a problem notification at **23:07:16** and a recovery notification at **23:12:16** on October 30, 2026. Both use Gmail and show **Sent**. I confirmed receiving both messages during the lab conversation, but did not capture independent mailbox-arrival timestamps in this archive.
 
-## Presentation finding
+![Both notification records](../evidence/screenshots/archive/screenshot_139.png)
 
-The action-log message bodies visibly contain HTML tags. This establishes how the log displays those bodies, not how Gmail rendered them. Check the received messages before claiming polished HTML formatting. Plain text templates are a reasonable future simplification if tags appear literally in the mailbox.
+The five minutes between those event timestamps is the recorded problem duration. The operation's Immediately setting is scheduling behavior after the action runs; it does not establish instant fault detection or instant mailbox delivery. The fault start, polling history, effective timeout macro, and receipt times needed to measure those delays were not all captured.
+
+See the [incident report](incidents/2026-10-30-monitoring-interruption.md) for the boot and service-event comparison.

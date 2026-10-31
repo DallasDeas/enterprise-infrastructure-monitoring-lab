@@ -1,70 +1,59 @@
-# Monitoring and recovery: annotated screenshot walkthrough
+# From a connected lab to a useful alert
 
-This walkthrough follows the investigation in a practical order: notification result, Windows state, service-event timing, and the separate historical shutdown finding. Each image explains both what is visible and how it supports the investigation.
+[Project overview](../README.md) · [All 142 annotated screenshots](archive.md)
 
-## 1. Verify the automated notification workflow
+These are the parts of the project I would walk through in an interview. The complete archive includes the installation screens and repeated checks; this page follows the decisions and results that mattered most.
 
-![Zabbix Gmail problem and recovery notification records](screenshots/04-gmail-action-log.png)
+## First, I had to make the network checks agree
 
-**What to look at:** The two rows show the Gmail media type and green `Sent` statuses. The problem notification is recorded at 23:07:16 on October 30, 2026; recovery is recorded at 23:12:16. The recovery subject states `Resolved in 5m 0s`.
+The workstation could ping the directory server, but the Hyper-V host could not. I found an APIPA address on the host's lab adapter, assigned it an address in the lab subnet, and checked again. The successful replies below came from the host after that change.
 
-**What this demonstrates:** Zabbix executed both sides of the notification workflow: reporting a problem and reporting recovery. The owner separately confirmed receipt of both messages, completing the available end-to-end validation.
+![Four successful host-to-server replies](screenshots/archive/screenshot_012.png)
 
-**Why it matters operationally:** Recovery notification helps an operator distinguish an active problem from one that has cleared. Checking the action log also separates notification execution from the underlying monitoring condition.
+That gave me a working foundation for the Ubuntu monitoring VM. I used one interface for internet access and a second static interface for the lab. [Network chapter](chapters/01-network-foundation.md) · [Ubuntu chapter](chapters/03-ubuntu-build.md).
 
-**Boundary:** `Sent` is the Zabbix send result, not an independently timestamped mailbox receipt. Five minutes is event duration, not measured detection latency. The `for 3m` text in the problem name is not a substitute for inspecting the trigger expression.
+## The database worked before the web page did
 
-## 2. Establish the Windows server's current state and boot context
+I created the Zabbix database, tested the application account, and imported the schema. The count of 207 tables gave me a useful checkpoint before I dealt with the frontend.
 
-![PowerShell service state and Windows last boot time](screenshots/03-service-and-boot.png)
+![Imported schema with 207 tables](screenshots/archive/screenshot_061.png)
 
-**What to look at:** `Get-Service` shows Zabbix Agent 2 as `Running` with startup type `Automatic`. `LastBootUpTime` is October 30 at 20:06:29 Windows local time. The displayed event query also returns startup/shutdown-related records at 20:06:22.
+Apache being active did not finish the job. I first got a 404, then a configuration error, then PHP source in the browser. I checked the alias, proxy modules, and PHP-FPM handler until the page reached the installer and then the dashboard. [Full web-stack troubleshooting](chapters/04-zabbix-stack.md).
 
-**What this demonstrates:** The investigation checked both service state and recent boot context instead of assuming that an unavailable agent had crashed. The current state confirms that the service was running when checked; boot context provides a reason to inspect the startup sequence.
+![Working Zabbix dashboard](screenshots/archive/screenshot_082.png)
 
-**Why it matters operationally:** A service check answers whether the process is currently available locally. Boot and event history help explain how it reached that state. These are distinct diagnostic questions.
+## I checked collected values, not just the host list
 
-**Boundary:** A running Windows service does not by itself establish that Zabbix is receiving fresh data or that AD/DNS was continuously available.
+On Windows, I verified Agent 2 was Running / Automatic and listening on port 10050. In Zabbix, I added the Windows template and agent interface, then checked Latest data. The DNS service values below show actual collected service states.
 
-## 3. Correlate service startup with monitoring recovery
+![DNS Server and DNS Client values](screenshots/archive/screenshot_097.png)
 
-![Filtered System event query showing Zabbix Agent 2 entering the running state](screenshots/01-agent-running-event.png)
+I also reviewed the service-state and availability triggers and captured a deliberate agent-stop test. Those checks helped me distinguish a service value from loss of the monitoring connection. [Windows monitoring chapter](chapters/05-windows-monitoring.md).
 
-**What to look at:** The query targets System Events `7031`, `7034`, and `7036` in the 20:00–20:20 Windows-local window and filters for Zabbix Agent 2. The displayed result is Event `7036` at 20:08:36: the service entered the running state.
+## A time warning turned into its own troubleshooting exercise
 
-**What this demonstrates:** The investigation moved from a current-state check to a timestamped service event. Using the conversation-documented Pacific/Eastern display difference, this event corresponds to 23:08:36 Eastern—after the Zabbix problem and before its resolution.
+Ubuntu's clock was about 221.5 seconds slow. I checked Chrony's sources, stepped the clock, and verified synchronization later. Then I found Chrony was denying the Windows client, corrected its access rule, and checked the time source Windows actually selected. A successful peer-configuration command had not been enough.
 
-**Why it matters operationally:** Correlating independent records provides a stronger explanation than attributing recovery to an intended troubleshooting action. Here, startup association is supported; a manual service restart is not established as the fix.
+![Windows synchronized to the Linux NTP source](screenshots/archive/screenshot_121.png)
 
-**Boundary:** No unexpected-termination event appears in the displayed query result. That statement applies to this query and interval only. The screenshot does not itself verify timezone settings or clock synchronization.
+The final status showed Leap Indicator 0 and Stratum 4. The address is covered, and the exact intervening Windows provider change was not captured. [Time-sync chapter](chapters/06-time-synchronization.md).
 
-## 4. Separate the previous shutdown from the current incident
+## The alert needed a recovery message too
 
-![Windows events identifying a previous October 28 unexpected shutdown](screenshots/02-previous-unclean-shutdown.png)
+I tested Gmail media delivery, limited the action to the directory server's agent-unavailable trigger, and added recovery notification. The October 30 Action log showed both messages marked Sent.
 
-**What to look at:** Event `6008` was recorded on October 30, but its message explicitly names the previous shutdown at 18:45:59 on October 28. Event `41` also appears in the October 30 startup window.
+![Problem and recovery Gmail sends](screenshots/archive/screenshot_139.png)
 
-**What this demonstrates:** The investigation distinguished the time an event was recorded from the historical event described inside its message. The October 28 shutdown is documented separately rather than presented as a newly proven October 30 crash.
+The problem lasted five minutes in Zabbix. I did not measure detection latency or mailbox delivery time. [Alert setup and results](../docs/alerting.md).
 
-**Why it matters operationally:** Accurate incident timelines depend on reading event details, not just event IDs and list timestamps. This distinction prevents an unsupported root-cause conclusion.
+## I checked the Windows evidence before writing the incident story
 
-**Boundary:** The screenshot does not identify whether the earlier shutdown resulted from a VM power-off, host interruption, or guest crash. Its cause remains undetermined.
+I compared the last boot time, the agent's Running event, and the Zabbix problem/recovery times. The sequence supports a startup-associated monitoring interruption under the documented time-zone assumption. It does not prove an agent crash or a particular manual fix.
 
-## Read the full investigation
+![Agent Running event in the queried window](screenshots/archive/screenshot_142.png)
 
-- [October 30 timeline and recovery analysis](../docs/incidents/2026-10-30-monitoring-interruption.md)
-- [Separate October 28 shutdown finding](../docs/incidents/2026-10-28-unclean-shutdown.md)
-- [Diagnostic runbook](../docs/troubleshooting.md)
+The unexpected-shutdown message was the detail I had to read carefully: it was logged on October 30 but described October 28. I kept that finding in its own note. [October 30 investigation](../docs/incidents/2026-10-30-monitoring-interruption.md) · [October 28 finding](../docs/incidents/2026-10-28-unclean-shutdown.md).
 
-## Evidence handling and index
+## Browse the full record
 
-These are cropped/redacted derivatives of original lab screenshots, not recreated interfaces. Cropping removes title bars, unrelated desktop UI, and blank space. Solid rectangles remove identifiers. Remaining screenshot pixels are preserved; PNG metadata is stripped. Originals are not committed.
-
-| ID | Screenshot | What it establishes |
-|---|---|---|
-| E01 | [Agent running event](screenshots/01-agent-running-event.png) | Query window and Event 7036 at 20:08:36 on October 30 |
-| E02 | [Previous unclean shutdown](screenshots/02-previous-unclean-shutdown.png) | Events recorded October 30; Event 6008 names October 28 18:45:59 |
-| E03 | [Service state and boot](screenshots/03-service-and-boot.png) | Running / Automatic, last boot, and startup event output |
-| E04 | [Gmail action log](screenshots/04-gmail-action-log.png) | Two Gmail sends, event times, recovery duration and Sent statuses |
-
-E04 masks the action name, recipient fields, and message-body lines containing host identifiers. The subject lines, notification times, media type, and send statuses remain visible. The browser/title/sidebar area is cropped out. Windows evidence is cropped below the machine-identifying VM title bar. The screenshot evidence does not itself establish mailbox receipt or timezone configuration.
+The [full archive](archive.md) links every PNG with a first-person explanation. The seven chapters include the early Windows VM branch, Ubuntu installation, web-stack failures, monitoring checks, time-sync work, and alert investigation. Private fields are covered; the remaining screenshot content is original evidence.

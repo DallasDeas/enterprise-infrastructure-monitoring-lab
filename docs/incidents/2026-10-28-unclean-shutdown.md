@@ -1,13 +1,13 @@
-# Separate finding: October 28 unclean shutdown
+# October 28: a separate unclean-shutdown finding
 
-The Windows screenshot shows Event 6008 recorded on October 30 at 20:06:22 local time. Its message identifies the **previous unexpected shutdown at 18:45:59 on October 28, 2026**. Event 41 was recorded on October 30 at 20:06:20.
+While investigating the October 30 monitoring interruption, I found an Event 6008 whose message said the previous shutdown on **October 28, 2026 at 18:45:59 Windows local time** was unexpected. The event itself was recorded on **October 30 at 20:06:22 Windows local time**. Event 41 was recorded at 20:06:20 in the same startup window.
 
-![Previous unexpected shutdown](../../evidence/screenshots/02-previous-unclean-shutdown.png)
+![Shutdown-event messages and recording times](../../evidence/screenshots/archive/screenshot_141.png)
 
-Using the conversation's stated Pacific timezone, the previous shutdown corresponds to October 28 at 21:45:59 Eastern (October 29 at 01:45:59 UTC). The screenshot itself does not display the timezone identifier.
+The recording date and the date inside the message describe different things. I kept the October 28 shutdown as its own finding instead of treating the October 30 log entry as proof of a new unclean shutdown that evening.
 
-The event recording time and the shutdown time inside the event message describe different things. These entries do not establish that a new crash occurred on October 30. They also do not identify a root cause for the October 28 shutdown.
+The screenshot does not establish whether the earlier shutdown came from a host power loss, forced VM stop, guest failure, or another cause. It also does not prove the shutdown caused the separate October 28 clock warning or the October 30 monitoring problem. Those connections would need more evidence.
 
-Possible explanations include an abrupt VM power-off, host interruption, or guest crash, but none is confirmed. Event 41 alone may not provide enough information to determine why a system restarted. [Microsoft's Event 41 investigation guidance](https://learn.microsoft.com/en-us/troubleshoot/windows-client/performance/event-id-41-restart).
+My next check would be the relevant Hyper-V host and guest records around the October 28 shutdown time, using an explicit time-zone basis. I did not capture that complete causal chain in this archive.
 
-No bugcheck data, crash dump, Hyper-V host event history, or user power-action history was preserved in the available evidence. This remains an unresolved historical cause, separate from the recovered October 30 monitoring incident.
+[October 30 investigation](2026-10-30-monitoring-interruption.md) · [Full screenshot archive](../../evidence/archive.md)

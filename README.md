@@ -1,71 +1,73 @@
 # Enterprise Infrastructure Monitoring Lab
 
-**Hyper-V · Windows Server · Ubuntu · Zabbix · Operational incident investigation**
+**Hyper-V · Windows Server · Ubuntu · Zabbix · PowerShell · Linux administration**
 
-A hands-on infrastructure lab connecting Windows service monitoring to automated Gmail problem and recovery notifications. The central case study correlates Zabbix notifications with Windows boot and service events to explain a monitoring interruption without overstating its cause.
+I built this lab to practice the work that comes after a server is installed: checking that it can communicate, collecting useful health data, getting an alert when monitoring breaks, and figuring out what the logs actually say about recovery.
 
-> Private review edition. Four original screenshots were inspected and sanitized for this repository. Platform and setup details available only in the lab conversation are labeled separately from screenshot-verified results. This is a home lab, not a production enterprise deployment.
+The final setup uses an Ubuntu VM running Zabbix to monitor a Windows Server directory-services and DNS VM. I connected Gmail problem and recovery notifications, worked through a cross-platform time-sync issue, and investigated an October 30 monitoring interruption using Windows events and the Zabbix action log.
 
-## Start here
+This is a home lab built around enterprise administration tools. It is not a production deployment or a claim of production incident-response experience.
 
-**The operational story:** monitor a Windows server from Zabbix, deliver an automated problem/recovery notification pair, and use Windows events to investigate the interruption. The investigation separates a startup-associated monitoring problem from an earlier unclean shutdown.
+## The result
 
-| For a quick review | For a technical review |
+![Zabbix problem and recovery notifications marked Sent](evidence/screenshots/archive/screenshot_139.png)
+
+*The Action log shows both Gmail notifications marked Sent. The problem was recorded at 23:07:16 and resolved at 23:12:16 on October 30, 2026. I also confirmed receiving both emails during the lab; the archive contains the send log, not mailbox-arrival screenshots.*
+
+| What I completed | Evidence |
 |---|---|
-| [Annotated screenshot walkthrough](evidence/README.md) — four images with findings and explanations | [Incident report](docs/incidents/2026-10-30-monitoring-interruption.md) — timeline, interpretation, and evidence limits |
-| Results and architecture below | [Setup](docs/setup.md) and [troubleshooting](docs/troubleshooting.md) — implementation record and diagnostic approach |
+| Connected Windows and Linux VMs across a Hyper-V lab network | [Network checks and Ubuntu setup](evidence/chapters/03-ubuntu-build.md) |
+| Installed Zabbix 7.4.16 with MariaDB, Apache, and PHP-FPM | [Database import through working dashboard](evidence/chapters/04-zabbix-stack.md) |
+| Collected Windows performance and service data with Agent 2 | [Agent installation and monitoring checks](evidence/chapters/05-windows-monitoring.md) |
+| Corrected clock synchronization and verified the selected time source | [Time-sync investigation](evidence/chapters/06-time-synchronization.md) |
+| Tested Gmail delivery and configured problem/recovery operations | [Alerting demonstration](docs/alerting.md) |
+| Correlated boot, service, and alert records without overstating the cause | [October 30 incident report](docs/incidents/2026-10-30-monitoring-interruption.md) |
 
-![Automated Gmail problem and recovery sends, with private fields redacted](evidence/screenshots/04-gmail-action-log.png)
+**The five-minute figure is the recorded problem duration. I did not measure fault-to-detection latency.** Agent unavailability also does not establish five minutes of AD or DNS downtime.
 
-*Two notification records show Gmail as the media type and Sent as the result. The recovery subject records a five-minute problem. Mailbox receipt was separately confirmed by the lab owner.*
-
-## What the evidence demonstrates
-
-| Result | Evidence |
-|---|---|
-| Automated problem and recovery notifications | Zabbix Action log: two Gmail messages with `Sent` status; lab owner separately confirmed receiving both |
-| Five-minute recorded problem | Problem at 23:07:16 and recovery at 23:12:16 on October 30, 2026 |
-| Agent recovery | Windows Event 7036: Zabbix Agent 2 entered the running state at 20:08:36 Windows local time |
-| Service configuration and boot context | Agent shown Running / Automatic; last boot displayed as 20:06:29 |
-| Separate historical shutdown finding | Event 6008 recorded October 30 names an unexpected shutdown on October 28 |
-
-**Five minutes is the Zabbix problem duration, not detection latency.** Neither the actual start of agent unavailability nor independent mailbox arrival timestamps were captured. This case does not establish an agent crash, a manual fix, or five minutes of application downtime.
-
-## Architecture
+## How the lab fits together
 
 ```mermaid
 flowchart LR
-  subgraph H[Hyper-V lab host]
-    subgraph N[Lab virtual network - exact switch mode unverified]
-      W["Windows Server 2022 VM<br/>AD DS and DNS<br/>Zabbix Agent 2"]
-      U["Ubuntu Server VM<br/>Zabbix and MariaDB<br/>Apache and Chrony"]
+  subgraph H[Hyper-V host]
+    V[Host lab adapter]
+    subgraph L[Internal lab switch]
+      D["Windows Server 2022<br/>AD DS and DNS<br/>Zabbix Agent 2"]
+      W[Windows 11 workstation]
+      U["Ubuntu 26.04.1<br/>Zabbix and MariaDB<br/>Apache, PHP-FPM, Chrony"]
     end
+    S["Default Switch<br/>Ubuntu internet-facing adapter"]
+    V --- D
+    W -->|Lab DNS| D
+    U -->|Passive agent checks: TCP 10050| D
+    D -->|NTP requests: UDP 123| U
+    U --- S
   end
-  W <-->|Monitoring relationship - mode unverified| U
-  U -->|Problem and recovery notifications| G[Gmail]
-  G --> R[Lab operator]
+  S --> I["Internet access<br/>Packages and external NTP"]
+  U -->|Problem and recovery email| G[Gmail]
 ```
 
-This is a logical diagram. Machine labels are role descriptions, not real hostnames. Network addressing, routing, port forwarding, active/passive agent mode, and time-source direction are intentionally not invented. See [architecture and topology](docs/architecture.md).
+The diagram uses role labels instead of real machine names or addresses. [Architecture and topology](docs/architecture.md) explains the two Ubuntu network interfaces and the management path.
 
-## Explore the project
+## What took the most troubleshooting
 
-- [Setup record and reconstruction checklist](docs/setup.md)
-- [Automated Gmail alert demonstration](docs/alerting.md)
-- [October 30 monitoring incident](docs/incidents/2026-10-30-monitoring-interruption.md)
-- [October 28 unclean shutdown finding](docs/incidents/2026-10-28-unclean-shutdown.md)
-- [Troubleshooting runbook](docs/troubleshooting.md)
-- [Annotated screenshot walkthrough](evidence/README.md)
-- [Evidence boundaries and remaining checks](docs/verification.md)
+The network checks taught me to test each path separately. The workstation could reach the directory server while the Hyper-V host still had an APIPA address on its lab adapter. Later, Apache was running but `/zabbix` returned a 404. Fixing the path exposed another issue: the browser showed PHP source. I checked the Apache modules and PHP-FPM handler before the frontend finally loaded.
 
-## Operational lessons
+Time synchronization was another useful lesson. A running NTP service and a successful configuration command were not enough. I checked Chrony's offset and access rules, then checked the time source Windows was actually using. The final status showed the Linux server as the Windows NTP source.
 
-The most useful outcome was separating what happened from what the logs could prove. A running service is one recovery signal; Zabbix resolution and notification delivery are separate signals. An unexpected-shutdown event's recording time is not necessarily the time of the shutdown it describes. Clock display differences must be accounted for before correlating systems.
+During the October 30 investigation, I found an unexpected-shutdown event whose message referred to October 28. Keeping the event's recording time separate from the shutdown it described prevented me from writing the wrong incident story.
 
-The lab exercises virtualization, Windows/Linux administration, service monitoring, notification validation, and evidence-based troubleshooting. The incident-response work here concerns infrastructure availability; it does not claim a security breach investigation.
+## Read the project
 
-## Scope and next improvements
+- **[Short screenshot walkthrough](evidence/README.md):** the key decisions, failures, and results.
+- **[All 142 annotated screenshots](evidence/archive.md):** seven chapters covering the full supplied archive.
+- **[Setup record](docs/setup.md):** the build sequence and verification checkpoints.
+- **[Troubleshooting notes](docs/troubleshooting.md):** symptoms, checks, and what each result established.
+- **[October 30 incident](docs/incidents/2026-10-30-monitoring-interruption.md)** and **[October 28 shutdown finding](docs/incidents/2026-10-28-unclean-shutdown.md)**.
+- **[Evidence limits](docs/verification.md)**.
 
-The lab conversation reports Hyper-V networking, Windows Server 2022 AD DS/DNS, Ubuntu-hosted Zabbix/MariaDB/Apache/Chrony, and cross-platform time troubleshooting. The four available screenshots directly substantiate the incident and notification results, not every deployment detail.
+## What I would improve next
 
-Before claiming a fully reproducible build, capture sanitized versions, virtual-switch configuration, agent mode, template/trigger settings, and time synchronization output. A future controlled test should record the actual fault start and mailbox receipt time to measure detection and notification latency separately.
+For the next controlled outage test, I would record the exact service-stop time, fresh item timestamps after recovery, and mailbox arrival times. That would let me measure detection and notification delays separately. I would also harden the lab's web and agent connections, which the captured setup shows without encryption, before treating it as a model for a production deployment.
+
+The repository remains private while I review the sanitized evidence for public release.
