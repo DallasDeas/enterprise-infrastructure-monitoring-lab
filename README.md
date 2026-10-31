@@ -27,25 +27,7 @@ This is a home lab built around enterprise administration tools. It is not a pro
 
 ## How the lab fits together
 
-```mermaid
-flowchart LR
-  subgraph H[Hyper-V host]
-    V[Host lab adapter]
-    subgraph L[Internal lab switch]
-      D["Windows Server 2022<br/>AD DS and DNS<br/>Zabbix Agent 2"]
-      W[Windows 11 workstation]
-      U["Ubuntu 26.04.1<br/>Zabbix and MariaDB<br/>Apache, PHP-FPM, Chrony"]
-    end
-    S["Default Switch<br/>Ubuntu internet-facing adapter"]
-    V --- D
-    W -->|Lab DNS| D
-    U -->|Passive agent checks: TCP 10050| D
-    D -->|NTP requests: UDP 123| U
-    U --- S
-  end
-  S --> I["Internet access<br/>Packages and external NTP"]
-  U -->|Problem and recovery email| G[Gmail]
-```
+![Lab topology showing Hyper-V, Windows and Ubuntu VMs, and the two virtual switches](docs/images/lab-topology.png)
 
 The diagram uses role labels instead of real machine names or addresses. [Architecture and topology](docs/architecture.md) explains the two Ubuntu network interfaces and the management path.
 
