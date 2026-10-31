@@ -6,6 +6,19 @@ A hands-on infrastructure lab connecting Windows service monitoring to automated
 
 > Private review edition. Four original screenshots were inspected and sanitized for this repository. Platform and setup details available only in the lab conversation are labeled separately from screenshot-verified results. This is a home lab, not a production enterprise deployment.
 
+## Start here
+
+**The operational story:** monitor a Windows server from Zabbix, deliver an automated problem/recovery notification pair, and use Windows events to investigate the interruption. The investigation separates a startup-associated monitoring problem from an earlier unclean shutdown.
+
+| For a quick review | For a technical review |
+|---|---|
+| [Annotated screenshot walkthrough](evidence/README.md) — four images with findings and explanations | [Incident report](docs/incidents/2026-10-30-monitoring-interruption.md) — timeline, interpretation, and evidence limits |
+| Results and architecture below | [Setup](docs/setup.md) and [troubleshooting](docs/troubleshooting.md) — implementation record and diagnostic approach |
+
+![Automated Gmail problem and recovery sends, with private fields redacted](evidence/screenshots/04-gmail-action-log.png)
+
+*Two notification records show Gmail as the media type and Sent as the result. The recovery subject records a five-minute problem. Mailbox receipt was separately confirmed by the lab owner.*
+
 ## What the evidence demonstrates
 
 | Result | Evidence |
@@ -24,8 +37,8 @@ A hands-on infrastructure lab connecting Windows service monitoring to automated
 flowchart LR
   subgraph H[Hyper-V lab host]
     subgraph N[Lab virtual network - exact switch mode unverified]
-      W[Windows Server 2022 VM\nAD DS and DNS\nZabbix Agent 2]
-      U[Ubuntu Server VM\nZabbix and MariaDB\nApache and Chrony]
+      W["Windows Server 2022 VM<br/>AD DS and DNS<br/>Zabbix Agent 2"]
+      U["Ubuntu Server VM<br/>Zabbix and MariaDB<br/>Apache and Chrony"]
     end
   end
   W <-->|Monitoring relationship - mode unverified| U
@@ -42,7 +55,7 @@ This is a logical diagram. Machine labels are role descriptions, not real hostna
 - [October 30 monitoring incident](docs/incidents/2026-10-30-monitoring-interruption.md)
 - [October 28 unclean shutdown finding](docs/incidents/2026-10-28-unclean-shutdown.md)
 - [Troubleshooting runbook](docs/troubleshooting.md)
-- [Curated screenshot evidence](evidence/README.md)
+- [Annotated screenshot walkthrough](evidence/README.md)
 - [Evidence boundaries and remaining checks](docs/verification.md)
 
 ## Operational lessons
