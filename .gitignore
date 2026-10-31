@@ -1,0 +1,23 @@
+# Unreviewed evidence and local working material
+raw/
+originals/
+private/
+tmp/
+.env
+.env.*
+*.pem
+*.key
+*.pfx
+*.p12
+*.evtx
+*.log
+*.csv
+*.sql
+*.vhd
+*.vhdx
+*.avhdx
+*.iso
+*.zip
+__pycache__/
+Thumbs.db
+.DS_Store
