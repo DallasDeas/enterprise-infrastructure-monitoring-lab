@@ -57,4 +57,3 @@ The incident review reinforced the same approach: a local Running state does not
 
 For a repeat test, I would capture an exact fault-injection timestamp, the effective trigger settings, fresh telemetry after recovery, and mailbox-arrival times. This would allow me to measure detection and notification delays separately. I would also strengthen the web and agent connections with encryption.
 
-The repository remains private pending my review for public release.
